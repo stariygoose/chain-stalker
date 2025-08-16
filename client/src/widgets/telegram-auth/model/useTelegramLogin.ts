@@ -12,10 +12,12 @@ export const useTelegramLogin = (ref: RefObject<HTMLDivElement | null>) => {
     const script = document.createElement("script");
     script.src = "https://telegram.org/js/telegram-widget.js?22";
     script.async = true;
-    script.setAttribute("data-telegram-login", "ChainStalkerBot");
+    script.setAttribute("data-telegram-login", "my_test_dev_super_bot");
     script.setAttribute("data-size", "large");
-    script.setAttribute("data-userpic", "false");
-    script.setAttribute("data-auth-url", `https://api/v1/auth/login`);
+    script.setAttribute(
+      "data-auth-url",
+      `https://gecko-special-dinosaur.ngrok-free.app/api/v1/auth/telegram-login`,
+    );
     script.setAttribute("data-request-access", "write");
 
     ref.current?.appendChild(script);

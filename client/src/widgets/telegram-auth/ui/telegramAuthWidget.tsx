@@ -6,5 +6,5 @@ export const TelegramAuthWidget = () => {
 
   useTelegramLogin(telegramBtnRef);
 
-  return <div ref={telegramBtnRef} className="mt-5 m-auto"></div>;
+  return <div ref={telegramBtnRef} className="mt-5"></div>;
 };

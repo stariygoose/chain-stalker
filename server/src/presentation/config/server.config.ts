@@ -11,61 +11,63 @@ import { EnvVariables } from "#config/env-variables.js";
 import { IMongoDbConfig } from "#infrastructure/database/mongodb/config/mongo.config.js";
 import { errorMiddleware } from "#presentation/middlewares/errors/error.middleware.js";
 import { Logger } from "#utils/logger.js";
-import { authenticateJWT } from "#presentation/middlewares/auth/auth.middleware.js";
+import { authMiddleware } from "#presentation/middlewares/auth/auth.middleware.js";
 import { requestLogger } from "#presentation/middlewares/request-logger/request-logger.middleware.js";
 
-
 export interface IServerConfig {
-	start(): Promise<void>;
+  start(): Promise<void>;
 }
 
 export class ServerConfig implements IServerConfig {
-	private readonly _server: InversifyExpressServer;
-	// private readonly _baseUrl: string;
-	private readonly _PORT: string;
+  private readonly _server: InversifyExpressServer;
+  // private readonly _baseUrl: string;
+  private readonly _PORT: string;
 
-	constructor (
-		@inject(TYPES.Logger)
-		private readonly _logger: Logger,
-		@inject(TYPES.ConfigService)
-		private readonly _config: ConfigService,
-		@inject(TYPES.MongoDbConfig)
-		private readonly _mongo: IMongoDbConfig
-	) {
-		this._server = new InversifyExpressServer(container, null, { rootPath: "/api/v1" });
-		// this._baseUrl = this._config.get(EnvVariables.DOMAIN_URL);
-		this._PORT = this._config.get(EnvVariables.SERVER_PORT);
-	}
+  constructor(
+    @inject(TYPES.Logger)
+    private readonly _logger: Logger,
+    @inject(TYPES.ConfigService)
+    private readonly _config: ConfigService,
+    @inject(TYPES.MongoDbConfig)
+    private readonly _mongo: IMongoDbConfig,
+  ) {
+    this._server = new InversifyExpressServer(container, null, {
+      rootPath: "/api/v1",
+    });
+    // this._baseUrl = this._config.get(EnvVariables.DOMAIN_URL);
+    this._PORT = this._config.get(EnvVariables.SERVER_PORT);
+  }
 
-	public async start(): Promise<void> {
-		this.initMiddlewares();
-		let app = this._server.build();
-		
-		await this._mongo.connect();
+  public async start(): Promise<void> {
+    this.initMiddlewares();
+    let app = this._server.build();
 
-		app.listen(this._PORT);
-		this._logger.info(`Server is running on PORT: ${this._PORT}`);
+    await this._mongo.connect();
 
-		await this._mongo.initEventStreams();
-	}
+    app.listen(this._PORT);
+    this._logger.info(`Server is running on PORT: ${this._PORT}`);
 
-	private initMiddlewares() {
-		this._server.setConfig((app) => {
-			app.use(bodyParser.urlencoded({ extended: false }));
-			app.use(bodyParser.json());
-			app.use(cookieParser());
-			// app.use(cors({
-			// 	origin: `https://${this._baseUrl}`,
-			// 	credentials: true,
-			// }));
+    // await this._mongo.initEventStreams();
+  }
 
-			app.use(authenticateJWT);
-			app.use(requestLogger(this._logger));
-			
-		});
+  private initMiddlewares() {
+    this._server.setConfig((app) => {
+      app.use(bodyParser.urlencoded({ extended: false }));
+      app.use(bodyParser.json());
+      app.use(cookieParser());
+      // app.use(
+      //   cors({
+      //     origin: `https://ffca67639a8b.ngrok-free.app`,
+      //     credentials: true,
+      //   }),
+      // );
 
-		this._server.setErrorConfig((app) => {
-			app.use(errorMiddleware);
-		})
-	}
+      app.use(authMiddleware);
+      app.use(requestLogger(this._logger));
+    });
+
+    this._server.setErrorConfig((app) => {
+      app.use(errorMiddleware);
+    });
+  }
 }

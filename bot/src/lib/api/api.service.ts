@@ -13,11 +13,7 @@ import {
   Subscription,
 } from "#lib/api/response.js";
 import { ILogger } from "#config/index.js";
-import {
-  ApiError,
-  BadRequestApiError,
-  DuplicateApiError,
-} from "#errors/errors/api.error.js";
+import { ApiError, BadRequestApiError } from "#errors/errors/api.error.js";
 import { ChainStalkerMessage } from "#ui/index.js";
 import { ICreateCollectionSceneWizard } from "#scenes/scenes/create-collection/create-collection.scene.js";
 import { ICreateTokenSceneWizard } from "#scenes/scenes/create-token/create-token.scene.js";
@@ -36,44 +32,24 @@ export class ApiService {
     const user = ctx.from?.id;
 
     try {
-      const tokens = await this._httpService.post<ResponseJwt>(
-        HttpService.LOGIN_URL,
+      await this._httpService.post<ResponseJwt>(
+        HttpService.REGISTER_URL,
         {
           userId: user,
         },
-        ctx.session,
+        `${user}`,
       );
 
-      ctx.session.jwt = tokens;
+      ctx.session.isFirstLogin = false;
     } catch (error: unknown) {
       if (error instanceof AxiosError) {
-        switch (error.response?.status) {
-          case 409:
-            this._logger.warn(
-              `User ${user} tried to log in, but was already logged in. Error: ${error.response.data.error}`,
-            );
-            throw new DuplicateApiError(
-              error.response.data.error,
-              ChainStalkerMessage.API.LOGIN_CONFLICT,
-            );
-          case 400:
-            this._logger.warn(
-              `User tried to log in, but received an error ${error.response?.data.error} | Details: ${error.response.data.details}`,
-            );
-            throw new BadRequestApiError(
-              error.response.data.error +
-                `| Details: ${error.response.data.details}`,
-              ChainStalkerMessage.API.LOGIN_BAD_REQUEST,
-            );
-          default:
-            this._logger.error(
-              `Login request failed for user ${user}: ${error.response?.data.error ?? error.message}`,
-            );
-            throw new ApiError(
-              error.response?.data.error,
-              ChainStalkerMessage.API.LOGIN_GENERIC,
-            );
-        }
+        this._logger.error(
+          `Login request failed for user ${user}: ${error.response?.data.error ?? error.message}`,
+        );
+        throw new ApiError(
+          error.response?.data.error,
+          ChainStalkerMessage.API.LOGIN_GENERIC,
+        );
       }
     }
   }
@@ -85,9 +61,10 @@ export class ApiService {
     type?: string,
   ): Promise<ResponseMyStalks> {
     try {
+      const userId = ctx.from?.id;
       const response = await this._httpService.get<ResponseMyStalks>(
         HttpService.SUBSCRIPTIONS_URL,
-        ctx.session,
+        `${userId}`,
       );
 
       return response;
@@ -141,9 +118,10 @@ export class ApiService {
     id: string,
   ): Promise<Subscription> {
     try {
+      const userId = ctx.from?.id;
       const subscription = await this._httpService.get<Subscription>(
         `${HttpService.SUBSCRIPTIONS_URL}/${id}`,
-        ctx.session,
+        `${userId}`,
       );
 
       return subscription;
@@ -196,10 +174,11 @@ export class ApiService {
     const id = ctx.session.targetToEdit?.id;
 
     try {
+      const userId = ctx.from?.id;
       await this._httpService.put(
         HttpService.SUBSCRIPTIONS_CHANGE_STATUS_URL + "/" + id,
         {},
-        ctx.session,
+        `${userId}`,
       );
     } catch (error: unknown) {
       const userId = ctx.from?.id;
@@ -251,9 +230,10 @@ export class ApiService {
     slug: string,
   ): Promise<ResponseCollection> {
     try {
+      const userId = ctx.from?.id;
       const collectionData = await this._httpService.get<ResponseCollection>(
         HttpService.COLLECTION_URL + "/" + slug,
-        ctx.session,
+        `${userId}`,
       );
 
       return collectionData;
@@ -307,9 +287,10 @@ export class ApiService {
     symbol: string,
   ): Promise<ResponseToken> {
     try {
+      const userId = ctx.from?.id;
       const tokenData = await this._httpService.get<ResponseToken>(
         HttpService.TOKEN_URL + "/" + symbol,
-        ctx.session,
+        `${userId}`,
       );
 
       return tokenData;
@@ -365,6 +346,7 @@ export class ApiService {
       ctx.wizard.state;
 
     try {
+      const userId = ctx.from?.id;
       await this._httpService.post(
         HttpService.CREATE_URL,
         {
@@ -381,7 +363,7 @@ export class ApiService {
             threshold: threshold,
           },
         },
-        ctx.session,
+        `${userId}`,
       );
     } catch (error: unknown) {
       const userId = ctx.from?.id;
@@ -436,6 +418,7 @@ export class ApiService {
     const { symbol, price, strategy, threshold } = ctx.wizard.state;
 
     try {
+      const userId = ctx.from?.id;
       await this._httpService.post(
         HttpService.CREATE_URL,
         {
@@ -449,7 +432,7 @@ export class ApiService {
             threshold: threshold,
           },
         },
-        ctx.session,
+        `${userId}`,
       );
     } catch (error: unknown) {
       const userId = ctx.from?.id;
@@ -502,10 +485,13 @@ export class ApiService {
     const { strategy } = ctx.wizard.state;
 
     try {
+      const userId = ctx.from?.id;
       await this._httpService.put(
         HttpService.STRATEGY_EDIT + "/" + id,
-        { strategy },
-        ctx.session,
+        {
+          strategy,
+        },
+        `${userId}`,
       );
     } catch (error: unknown) {
       const userId = ctx.from?.id;
@@ -555,9 +541,10 @@ export class ApiService {
 
   public async deleteSubscription(ctx: MyContext, id: string) {
     try {
+      const userId = ctx.from?.id;
       await this._httpService.delete(
         HttpService.SUBSCRIPTION_DELETE + "/" + id,
-        ctx.session,
+        `${userId}`,
       );
     } catch (error: unknown) {
       const userId = ctx.from?.id;

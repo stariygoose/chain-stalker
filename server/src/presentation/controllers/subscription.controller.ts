@@ -1,38 +1,56 @@
-import { NextFunction, Response } from "express";
+import { NextFunction, Response, Request } from "express";
 import { inject } from "inversify";
-import { controller, httpDelete, httpGet, httpPost, httpPut, next, queryParam, request, requestParam, response } from "inversify-express-utils";
+import {
+  controller,
+  httpDelete,
+  httpGet,
+  httpPost,
+  httpPut,
+  next,
+  queryParam,
+  request,
+  requestParam,
+  response,
+} from "inversify-express-utils";
 
 import { ISubscriptionService } from "#application/services/subscription.service.js";
 import { TYPES } from "#di/types.js";
 import { joiValidator } from "#presentation/middlewares/validation/subscription.create.validator.js";
 import { subscriptionCreateSchema } from "#presentation/schemas/subscription.create.schema.js";
-import { AuthenticatedRequest } from "#presentation/middlewares/auth/auth.middleware.js";
 import { Logger } from "#utils/logger.js";
 import { ICreateSubscriptionRequest } from "#application/dtos/create-subcsription.dto.js";
+import { ApiError } from "#infrastructure/errors/index.js";
 
-
-@controller('/subscriptions')
+@controller("/subscriptions")
 export class SubscriptionController {
-	constructor (
-		@inject(TYPES.SubscriptionService)
-		private readonly _subscriptionService: ISubscriptionService,
-		@inject(TYPES.Logger)
-		private readonly _logger: Logger
-	) {}
+  constructor(
+    @inject(TYPES.SubscriptionService)
+    private readonly _subscriptionService: ISubscriptionService,
+    @inject(TYPES.Logger)
+    private readonly _logger: Logger,
+  ) {}
 
-	@httpGet("/")
+  @httpGet("/")
   public async getAllByUserId(
     @queryParam("type") type: string,
-    @request() req: AuthenticatedRequest,
+    @request() req: Request,
     @response() res: Response,
-    @next() next: NextFunction
+    @next() next: NextFunction,
   ) {
     try {
-			const { context } = req;
+      const { context } = req;
 
-			this._logger.debug(`New request from user ${context.userId} to get data all subscriptions ${type ? `by type ${type}` : ''}.`);
+      if (!context) {
+        throw new ApiError.BadRequestError("Missing context");
+      }
+      this._logger.debug(
+        `New request from user ${context.userId} to get data all subscriptions ${type ? `by type ${type}` : ""}.`,
+      );
 
-      const subs = await this._subscriptionService.getAllByUserId(context.userId, type);
+      const subs = await this._subscriptionService.getAllByUserId(
+        context.userId,
+        type,
+      );
 
       return res.status(200).json(subs);
     } catch (error) {
@@ -40,94 +58,132 @@ export class SubscriptionController {
     }
   }
 
-	@httpGet('/:id')
-	public async getById(
-		@requestParam("id") id: string,
-		@request() req: AuthenticatedRequest,
-		@response() res: Response,
-		@next() next: NextFunction
-	) {
-		try {
-			const { context } = req;
+  @httpGet("/:id")
+  public async getById(
+    @requestParam("id") id: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const { context } = req;
 
-			this._logger.debug(`New request from user ${context.userId} to get a subscription data ${id}`);
+      if (!context) {
+        throw new ApiError.BadRequestError("Missing context");
+      }
+      this._logger.debug(
+        `New request from user ${context.userId} to get a subscription data ${id}`,
+      );
 
-			const subscription = await this._subscriptionService.getById(context.userId, id);
+      const subscription = await this._subscriptionService.getById(
+        context.userId,
+        id,
+      );
 
-			return res.status(200).json(subscription);
-		} catch (error: unknown) {
-			next(error);
-		}
-	}
+      return res.status(200).json(subscription);
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
 
-	@httpPost('/create', joiValidator(subscriptionCreateSchema))
-	public async create(
-		@request() req: AuthenticatedRequest,
-		@response() res: Response,
-		@next() next: NextFunction
-	) {
-		try {
-			const { body, context } = req;
+  @httpPost("/create", joiValidator(subscriptionCreateSchema))
+  public async create(
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const { body, context } = req;
 
-			this._logger.debug(`New request from user ${context.userId} for creating a subscription.`);
+      if (!context) {
+        throw new ApiError.BadRequestError("Missing context");
+      }
+      this._logger.debug(
+        `New request from user ${context.userId} for creating a subscription.`,
+      );
 
-			const subscription = await this._subscriptionService.create(context.userId, body);
+      const subscription = await this._subscriptionService.create(
+        context.userId,
+        body,
+      );
 
-			const { target, strategy } = body as ICreateSubscriptionRequest;
-			this._logger.info(`User ${context.userId} created subscription: ${JSON.stringify({
-				type: target.type,
-				strategy: strategy.type,
-				threshold: strategy.threshold
-			})}`);
+      const { target, strategy } = body as ICreateSubscriptionRequest;
+      this._logger.info(
+        `User ${context.userId} created subscription: ${JSON.stringify({
+          type: target.type,
+          strategy: strategy.type,
+          threshold: strategy.threshold,
+        })}`,
+      );
 
-			return res.status(201).json(subscription);
+      return res.status(201).json(subscription);
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
 
-		} catch (error: unknown) {
-			next(error);
-		}
-	}
+  @httpPut("/change_status/:id")
+  public async changeStatus(
+    @requestParam("id") id: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const { context } = req;
 
-	@httpPut('/change_status/:id')
-	public async changeStatus(
-		@requestParam("id") id: string,
-		@request() req: AuthenticatedRequest,
-		@response() res: Response,
-		@next() next: NextFunction
-	) {
-		try {
-			const { userId } = req.context;
+      if (!context) {
+        throw new ApiError.BadRequestError("Missing context");
+      }
+      const { userId } = context;
 
-			this._logger.debug(`User ${userId} requests to change activity status for subscription ${id}`);
+      this._logger.debug(
+        `User ${userId} requests to change activity status for subscription ${id}`,
+      );
 
-			const subscription = await this._subscriptionService.changeStatusById(userId, id);
+      const subscription = await this._subscriptionService.changeStatusById(
+        userId,
+        id,
+      );
 
-			this._logger.info(`User ${userId} successfully changed an activity status for subscription ${id}`);
+      this._logger.info(
+        `User ${userId} successfully changed an activity status for subscription ${id}`,
+      );
 
-			return res.status(201).json(subscription);
-		} catch (error: unknown) {
-			next(error);
-		}
-	}
+      return res.status(201).json(subscription);
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
 
-	@httpDelete('/delete/:id')
-	public async delete(
-		@requestParam("id") id: string,
-		@request() req: AuthenticatedRequest,
-		@response() res: Response,
-		@next() next: NextFunction
-	) {
-		try {
-			const { userId } = req.context;
+  @httpDelete("/delete/:id")
+  public async delete(
+    @requestParam("id") id: string,
+    @request() req: Request,
+    @response() res: Response,
+    @next() next: NextFunction,
+  ) {
+    try {
+      const { context } = req;
 
-			this._logger.debug(`User ${userId} requests deletion of subscription ${id}`);
-			
-			await this._subscriptionService.deleteById(userId, id);
+      if (!context) {
+        throw new ApiError.BadRequestError("Missing context");
+      }
+      const { userId } = context;
 
-			this._logger.info(`User ${userId} successfully deleted a subscription ${id}`);
+      this._logger.debug(
+        `User ${userId} requests deletion of subscription ${id}`,
+      );
 
-			return res.sendStatus(204);
-		} catch (error) {
-			next(error);
-		}
-	}
+      await this._subscriptionService.deleteById(userId, id);
+
+      this._logger.info(
+        `User ${userId} successfully deleted a subscription ${id}`,
+      );
+
+      return res.sendStatus(204);
+    } catch (error) {
+      next(error);
+    }
+  }
 }

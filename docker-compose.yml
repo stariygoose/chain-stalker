@@ -16,13 +16,15 @@ services:
   #   networks:
   #     - ${NODE_MODE}
 
-  # ngrok:
-  #   image: ngrok/ngrok:3.19.0-alpine
-  #   volumes:
-  #     - ./ngrok.yml:/var/lib/ngrok/ngrok.yml
-  #   command: ["start", "web", "--authtoken", "${NGROK_TOKEN}"]
-  #   networks:
-  #     - ${NODE_MODE}
+  ngrok:
+    image: ngrok/ngrok:latest
+    volumes:
+      - ./ngrok.yml:/var/lib/ngrok/ngrok.yml
+    command: ["start", "chainstalker", "--authtoken", "${NGROK_TOKEN}"]
+    networks:
+      - ${NODE_MODE}
+    ports:
+      - 8080:8080
 
   bot:
     build:
@@ -40,6 +42,10 @@ services:
 
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+
+      - BOT_SECRET_KEY=${BOT_SECRET_KEY}
+      - BOT_SERVICE_NAME=${BOT_SERVICE_NAME}
     env_file:
       - .env
     ports:
@@ -55,10 +61,11 @@ services:
     depends_on:
       - mongodb
       - redis
+      - ngrok
     environment:
       - NODE_MODE=${NODE_MODE}
 
-      # - DOMAIN_URL=${NGROK_STATIC_DOMAIN}
+      - DOMAIN_URL=${NGROK_STATIC_DOMAIN}
       - SERVER_PORT=${SERVER_PORT}
 
       - MONGODB_URL=mongodb://${DB_USER}:${DB_PASS}@mongodb:${DB_PORT}/${DB_DATABASE}?authSource=${DB_DATABASE}&directConnection=true
@@ -72,6 +79,9 @@ services:
 
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+      - BOT_SECRET_KEY=${BOT_SECRET_KEY}
+      - BOT_SERVICE_NAME=${BOT_SERVICE_NAME}
 
       # - MARKETPLACE_KEY_OPENSEA=${MARKETPLACE_KEY_OPENSEA}
       # - MARKETPLACE_KEY_BINANCE=${MARKETPLACE_KEY_BINANCE}

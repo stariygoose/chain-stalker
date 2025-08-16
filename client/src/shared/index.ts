@@ -1,4 +1,3 @@
-export { VantaBackground } from "./ui/VantaBackground";
 export { Card } from "./ui/card";
 export { SVGIcon } from "./ui/SVGIcon";
 export { Button } from "./ui/button";
