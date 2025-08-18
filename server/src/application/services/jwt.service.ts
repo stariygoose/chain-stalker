@@ -8,13 +8,17 @@ import { IJwtTokenRepository } from "#application/repository/jwt.repository.js";
 import { ApiError } from "#infrastructure/errors/index.js";
 import { JwtDbRecord } from "#infrastructure/dtos/jwt/jwt.dto.js";
 
-interface JwtPayloadMetaData extends jwt.JwtPayload {
+export interface JwtPayload {
   userId: number;
 }
 
+type JwtPayloadMetaData = JwtPayload & jwt.JwtPayload;
+
+type JwtType = "access" | "refresh" | "both";
+
 export interface IJwtTokens {
-  refreshToken: string;
-  accessToken: string;
+  refreshToken: string | null;
+  accessToken: string | null;
 }
 
 export interface IJwtService {
@@ -25,13 +29,16 @@ export interface IJwtService {
     newRefreshToken: string,
   ): Promise<JwtDbRecord>;
 
-  generatePair(payload: Record<any, unknown>): IJwtTokens;
-  validateRefreshToken(token: string): boolean;
-  decodeAccessToken(token: string): JwtPayloadMetaData;
+  generateJwt(type: JwtType, payload: JwtPayload): IJwtTokens;
+  validateToken(type: Omit<JwtType, "both">, token: string): void;
+  decodeToken(token: string): JwtPayloadMetaData;
 }
 
 @injectable()
 export class JwtService implements IJwtService {
+  private readonly ACCESS_EXPIRES = "10m";
+  private readonly REFRESH_EXPIRES = "30d";
+
   private readonly ACCESS_SECRET: string;
   private readonly REFRESH_SECRET: string;
 
@@ -83,34 +90,82 @@ export class JwtService implements IJwtService {
     }
   }
 
-  public generatePair(payload: Record<any, unknown>): IJwtTokens {
-    const accessToken = jwt.sign(payload, this.ACCESS_SECRET, {
-      expiresIn: "30m",
-    });
-    const refreshToken = jwt.sign(payload, this.REFRESH_SECRET, {
-      expiresIn: "30d",
-    });
-
-    return { accessToken, refreshToken };
-  }
-
-  public validateRefreshToken(token: string): boolean {
-    try {
-      jwt.verify(token, this.REFRESH_SECRET);
-      return true;
-    } catch (error) {
-      return false;
+  public generateJwt(type: JwtType, payload: JwtPayload): IJwtTokens {
+    switch (type) {
+      case "access":
+        const accessToken = this.generateAccessToken(payload);
+        return {
+          accessToken,
+          refreshToken: null,
+        };
+      case "refresh":
+        const refreshToken = this.generateRefreshToken(payload);
+        return {
+          accessToken: null,
+          refreshToken,
+        };
+      case "both":
+        const aToken = this.generateAccessToken(payload);
+        const rToken = this.generateRefreshToken(payload);
+        return {
+          accessToken: aToken,
+          refreshToken: rToken,
+        };
+      default:
+        const exhaustiveCheck: never = type;
+        throw new Error(`Unhandled type ${exhaustiveCheck}`);
     }
   }
 
-  public decodeAccessToken(token: string): JwtPayloadMetaData {
-    const decoded = jwt.verify(token, this.ACCESS_SECRET);
-    if (typeof decoded !== "object")
+  public validateToken(type: Omit<JwtType, "both">, token: string): void {
+    switch (type) {
+      case "access":
+        this.validateAccessToken(token);
+        break;
+      case "refresh":
+        this.validateRefreshToken(token);
+        break;
+      default:
+        break;
+    }
+  }
+
+  public decodeToken(token: string): JwtPayloadMetaData {
+    const decoded = jwt.decode(token, { json: true });
+    if (!decoded)
       throw new ApiError.ConflictError(
-        "Access token waiting for an object but receives string.",
+        "Token waiting for an object but receives null.",
       );
     if (this.isJwtPayloadMetadata(decoded)) return decoded;
     throw new ApiError.UnauthorizedError("Invalid access token");
+  }
+
+  private validateRefreshToken(token: string): void {
+    try {
+      jwt.verify(token, this.REFRESH_SECRET);
+    } catch (error: unknown) {
+      throw error;
+    }
+  }
+
+  private validateAccessToken(token: string): void {
+    try {
+      jwt.verify(token, this.ACCESS_SECRET);
+    } catch (error: unknown) {
+      throw error;
+    }
+  }
+
+  private generateAccessToken(payload: JwtPayload): string {
+    return jwt.sign(payload, this.ACCESS_SECRET, {
+      expiresIn: this.ACCESS_EXPIRES,
+    });
+  }
+
+  private generateRefreshToken(payload: JwtPayload): string {
+    return jwt.sign(payload, this.REFRESH_SECRET, {
+      expiresIn: this.REFRESH_EXPIRES,
+    });
   }
 
   private isJwtPayloadMetadata(
@@ -119,4 +174,3 @@ export class JwtService implements IJwtService {
     return payload !== null && typeof payload.userId === "number";
   }
 }
-

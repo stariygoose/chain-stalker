@@ -1,23 +1,41 @@
 import { inject, injectable } from "inversify";
+import crypto from "crypto";
 
 import { IJwtService, IJwtTokens } from "#application/services/jwt.service.js";
 import { TYPES } from "#di/types.js";
 import { ApiError, LayerError } from "#infrastructure/errors/index.js";
 import { IUserRepository } from "#application/repository/user.repository.js";
+import { ConfigService } from "#config/config.service.js";
+import { EnvVariables } from "#config/env-variables.js";
+
+export interface TelegramLoginQuery {
+  id: string;
+  auth_date: string;
+  hash: string;
+  first_name: string;
+  username: string;
+  photo_url?: string;
+}
 
 export interface IAuthService {
+  telegramLogin(telegramQuery: TelegramLoginQuery): Promise<IJwtTokens>;
   botRegister(userId: number): Promise<void>;
-  refreshToken(refreshToken: string): Promise<IJwtTokens>;
 }
 
 @injectable()
 export class AuthService implements IAuthService {
+  private readonly TG_BOT_TOKEN: string;
+
   constructor(
+    @inject(TYPES.ConfigService)
+    private readonly _config: ConfigService,
     @inject(TYPES.JwtService)
     private readonly _jwtService: IJwtService,
     @inject(TYPES.UserRepository)
     private readonly _userRepository: IUserRepository,
-  ) {}
+  ) {
+    this.TG_BOT_TOKEN = this._config.get(EnvVariables.TG_BOT_TOKEN);
+  }
 
   public async botRegister(userId: number): Promise<void> {
     try {
@@ -35,16 +53,24 @@ export class AuthService implements IAuthService {
     }
   }
 
-  public async telegramLogin(userId: number): Promise<IJwtTokens> {
+  public async telegramLogin(
+    telegramQuery: TelegramLoginQuery,
+  ): Promise<IJwtTokens> {
+    const { id } = telegramQuery;
+
     try {
-      let userMetaData = await this._userRepository.findByUserId(userId);
-      if (!userMetaData) {
-        userMetaData = await this._userRepository.createUser(userId);
+      if (!this.checkTelegramHash(telegramQuery)) {
+        throw new ApiError.BadRequestError("Invalid hash");
       }
 
-      const tokens = this._jwtService.generatePair({ ...userMetaData });
+      let userMetaData = await this._userRepository.findByUserId(+id);
+      if (!userMetaData) {
+        userMetaData = await this._userRepository.createUser(+id);
+      }
 
-      await this._jwtService.saveToken(userId, tokens.refreshToken);
+      const tokens = this._jwtService.generateJwt("both", { ...userMetaData });
+
+      await this._jwtService.saveToken(+id, tokens.refreshToken!);
 
       return tokens;
     } catch (error: unknown) {
@@ -56,32 +82,24 @@ export class AuthService implements IAuthService {
       throw error;
     }
   }
-  public async refreshToken(refreshToken: string): Promise<IJwtTokens> {
-    try {
-      const decoded = this._jwtService.validateRefreshToken(refreshToken);
-      if (!decoded)
-        throw new ApiError.UnauthorizedError("Invalid refresh token");
 
-      const session = await this._jwtService.findToken(refreshToken);
-      if (!session) throw new ApiError.NotFoundError("Refresh Token not found");
+  private checkTelegramHash(telegramQuery: TelegramLoginQuery): boolean {
+    const { hash, ...userData } = telegramQuery;
+    const dataCheckString = Object.keys(userData)
+      .sort((a, b) => a.localeCompare(b))
+      .map((key) => `${key}=${(userData as Record<string, string>)[key]}`)
+      .join("\n");
 
-      const userMetaData = await this._userRepository.findByUserId(
-        session.userId,
-      );
-      if (!userMetaData) throw new ApiError.NotFoundError("User not found");
+    const secretKey = crypto
+      .createHash("sha256")
+      .update(this.TG_BOT_TOKEN)
+      .digest();
 
-      const newTokens = this._jwtService.generatePair({
-        userId: userMetaData.userId,
-      });
+    const createdHash = crypto
+      .createHmac("sha256", secretKey)
+      .update(dataCheckString)
+      .digest("hex");
 
-      await this._jwtService.updateRefreshToken(
-        session.refreshToken,
-        newTokens.refreshToken,
-      );
-
-      return newTokens;
-    } catch (error: unknown) {
-      throw error;
-    }
+    return createdHash === hash;
   }
 }

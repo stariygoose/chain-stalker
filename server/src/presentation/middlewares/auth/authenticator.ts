@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { inject, injectable } from "inversify";
+import jwt from "jsonwebtoken";
 
 import { IJwtService } from "#application/services/jwt.service.js";
 import { ConfigService } from "#config/config.service.js";
@@ -7,7 +8,6 @@ import { EnvVariables } from "#config/env-variables.js";
 import { TYPES } from "#di/types.js";
 import { ApiError } from "#infrastructure/errors/index.js";
 import { createSignature } from "#utils/create-signature.js";
-import { ILogger } from "#utils/logger.js";
 import { isString } from "#utils/isString.js";
 
 export interface IAuthenticator {
@@ -18,7 +18,6 @@ export interface IAuthenticator {
 export class Authenticator {
   private readonly UNPROTECTED_ROUTES = [
     "/auth/telegram-login",
-    "/auth/refresh",
     "/auth/bot-login",
   ];
   private readonly BOT_SECRET_KEY: string;
@@ -26,9 +25,8 @@ export class Authenticator {
   constructor(
     @inject(TYPES.ConfigService) private _config: ConfigService,
     @inject(TYPES.JwtService) private _jwtService: IJwtService,
-    @inject(TYPES.Logger) private _logger: ILogger,
   ) {
-    this.BOT_SECRET_KEY = this._config.get(EnvVariables.BOT_SECRET_KEY);
+    this.BOT_SECRET_KEY = this._config.get(EnvVariables.TG_BOT_TOKEN);
   }
 
   public authenticate(req: Request, res: Response, next: NextFunction) {
@@ -46,69 +44,144 @@ export class Authenticator {
     res: Response,
     next: NextFunction,
   ) {
-    const skipAuth = req.originalUrl;
-    if (skipAuth in this.UNPROTECTED_ROUTES) {
-      this._logger.debug(
-        `Unprotected route: ${skipAuth}, skipping authentication.`,
-      );
-      return next();
+    if (this.isUnprotected(req)) return next();
+
+    const accessToken = req.cookies.accessToken;
+    if (!accessToken) {
+      return next(new ApiError.UnauthorizedError("Missing access token."));
     }
 
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return next(
-        new ApiError.UnauthorizedError(
-          "Missing or invalid Authorization header",
-        ),
-      );
-    }
+    this.handleAccessToken(req, res, next, accessToken);
+  }
 
+  private isUnprotected(req: Request): boolean {
+    const isUnprotectedRoute = this.UNPROTECTED_ROUTES.some((route) =>
+      req.originalUrl.includes(route),
+    );
+
+    return isUnprotectedRoute;
+  }
+
+  private handleAccessToken(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+    accessToken: string,
+  ) {
     try {
-      const token = authHeader.split(" ")[1];
-      const decodedAccessToken = this._jwtService.decodeAccessToken(token);
-      req.context.userId = decodedAccessToken.userId;
-      next();
+      this._jwtService.validateToken("access", accessToken);
+      this.setUserContext(req, accessToken);
+      return next();
     } catch (e: any) {
-      return next(new ApiError.UnauthorizedError(e.message));
+      if (e instanceof jwt.TokenExpiredError) {
+        return this.handleExpiredAccess(req, res, next, accessToken);
+      } else {
+        return next(new ApiError.UnauthorizedError(e.message));
+      }
     }
   }
 
+  private handleExpiredAccess(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+    accessToken: string,
+  ) {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken)
+      return next(new ApiError.UnauthorizedError("Missing refresh token."));
+
+    try {
+      this._jwtService.validateToken("refresh", refreshToken);
+      const { userId } = this._jwtService.decodeToken(accessToken);
+      const newAccessToken = this._jwtService.generateJwt("access", { userId });
+
+      this.setUserContext(req, newAccessToken.accessToken!);
+      res.cookie("accessToken", newAccessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        path: "/",
+      });
+      return next();
+    } catch {
+      return next(
+        new ApiError.LoginTimeoutError(
+          `Refresh token is expired or invalid. Please login again.`,
+        ),
+      );
+    }
+  }
+
+  private setUserContext(req: Request, accessToken: string) {
+    const { userId } = this._jwtService.decodeToken(accessToken);
+    req.context = {
+      userId: Number(userId),
+    };
+  }
+
   private authenticateBot(req: Request, res: Response, next: NextFunction) {
+    const headers = this.extractBotHeaders(req, next);
+    if (!headers) return;
+
+    if (!this.verifyBotSignature(req, headers)) {
+      return next(new ApiError.UnauthorizedError("Invalid signature"));
+    }
+
+    this.setBotContext(req, headers.userId);
+    next();
+  }
+
+  private extractBotHeaders(req: Request, next: NextFunction) {
     const signature = req.headers["x-bot-signature"];
     const timestamp = req.headers["x-bot-timestamp"];
     const userId = req.headers["x-telegram-user-id"];
 
-    if (!isString(signature))
-      return next(
+    if (!isString(signature)) {
+      next(
         new ApiError.UnauthorizedError(
           "Missing or invalid X-Bot-Signature header.",
         ),
       );
-    if (!isString(timestamp))
-      return next(
+      return null;
+    }
+    if (!isString(timestamp)) {
+      next(
         new ApiError.UnauthorizedError(
           "Missing or invalid X-Bot-Timestamp header.",
         ),
       );
-    if (!isString(userId))
-      return next(
+      return null;
+    }
+    if (!isString(userId)) {
+      next(
         new ApiError.UnauthorizedError(
           "Missing or invalid X-Telegram-User-ID header.",
         ),
       );
+      return null;
+    }
 
+    return { signature, timestamp, userId };
+  }
+
+  private verifyBotSignature(
+    req: Request,
+    headers: { signature: string; timestamp: string; userId: string },
+  ): boolean {
     const serverSignature = createSignature(
-      timestamp,
-      userId,
+      headers.timestamp,
+      headers.userId,
       req.method,
       req.url,
       this.BOT_SECRET_KEY,
     );
+    return serverSignature === headers.signature;
+  }
 
-    if (serverSignature !== signature)
-      next(new ApiError.UnauthorizedError("Invalid signature"));
-
-    req.context.userId = +userId;
-    next();
+  private setBotContext(req: Request, userId: string) {
+    req.context = {
+      userId: Number(userId),
+    };
   }
 }

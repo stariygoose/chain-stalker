@@ -34,7 +34,7 @@ services:
     environment:
       - NODE_MODE=${NODE_MODE}
 
-      - TG_TOKEN=${TG_BOT_TOKEN}
+      - TG_BOT_TOKEN=${TG_BOT_TOKEN}
       - TG_BOT_PORT=${TG_BOT_PORT}
 
       # - DOMAIN_URL=${NGROK_STATIC_DOMAIN}
@@ -43,8 +43,6 @@ services:
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
 
-
-      - BOT_SECRET_KEY=${BOT_SECRET_KEY}
       - BOT_SERVICE_NAME=${BOT_SERVICE_NAME}
     env_file:
       - .env
@@ -65,11 +63,11 @@ services:
     environment:
       - NODE_MODE=${NODE_MODE}
 
-      - DOMAIN_URL=${NGROK_STATIC_DOMAIN}
       - SERVER_PORT=${SERVER_PORT}
 
       - MONGODB_URL=mongodb://${DB_USER}:${DB_PASS}@mongodb:${DB_PORT}/${DB_DATABASE}?authSource=${DB_DATABASE}&directConnection=true
       - BOT_URL=http://bot:${TG_BOT_PORT}
+      - DOMAIN_URL=https://pretty-casual-hound.ngrok-free.app
 
       - OPENSEA_TOKEN=${OPENSEA_TOKEN}
       - TG_BOT_TOKEN=${TG_BOT_TOKEN}
@@ -80,7 +78,7 @@ services:
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
 
-      - BOT_SECRET_KEY=${BOT_SECRET_KEY}
+      - TG_BOT_TOKEN=${TG_BOT_TOKEN}
       - BOT_SERVICE_NAME=${BOT_SERVICE_NAME}
 
       # - MARKETPLACE_KEY_OPENSEA=${MARKETPLACE_KEY_OPENSEA}

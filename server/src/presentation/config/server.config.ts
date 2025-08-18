@@ -20,7 +20,7 @@ export interface IServerConfig {
 
 export class ServerConfig implements IServerConfig {
   private readonly _server: InversifyExpressServer;
-  // private readonly _baseUrl: string;
+  private readonly _baseUrl: string;
   private readonly _PORT: string;
 
   constructor(
@@ -34,7 +34,7 @@ export class ServerConfig implements IServerConfig {
     this._server = new InversifyExpressServer(container, null, {
       rootPath: "/api/v1",
     });
-    // this._baseUrl = this._config.get(EnvVariables.DOMAIN_URL);
+    this._baseUrl = this._config.get(EnvVariables.DOMAIN_URL);
     this._PORT = this._config.get(EnvVariables.SERVER_PORT);
   }
 
@@ -55,12 +55,12 @@ export class ServerConfig implements IServerConfig {
       app.use(bodyParser.urlencoded({ extended: false }));
       app.use(bodyParser.json());
       app.use(cookieParser());
-      // app.use(
-      //   cors({
-      //     origin: `https://ffca67639a8b.ngrok-free.app`,
-      //     credentials: true,
-      //   }),
-      // );
+      app.use(
+        cors({
+          origin: this._baseUrl,
+          credentials: true,
+        }),
+      );
 
       app.use(authMiddleware);
       app.use(requestLogger(this._logger));

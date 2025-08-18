@@ -1,7 +1,7 @@
 export const EnvVariables = {
   NODE_MODE: "NODE_MODE",
 
-  TG_TOKEN: "TG_TOKEN",
+  TG_BOT_TOKEN: "TG_BOT_TOKEN",
   TG_BOT_PORT: "TG_BOT_PORT",
 
   SERVER_URL: "SERVER_URL",
@@ -10,7 +10,5 @@ export const EnvVariables = {
   REDIS_PORT: "REDIS_PORT",
   REDIS_PASSWORD: "REDIS_PASSWORD",
 
-  BOT_SECRET_KEY: "BOT_SECRET_KEY",
   BOT_SERVICE_NAME: "BOT_SERVICE_NAME",
 };
-

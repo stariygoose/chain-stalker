@@ -1,6 +1,14 @@
 import { DashboardStats, DashboardTable } from "@/features/dashboard";
+import { HttpService } from "@/shared/lib/http.service";
+import { useEffect } from "react";
 
 export const DashboardWidget = () => {
+  const httpService = new HttpService();
+
+  useEffect(() => {
+    httpService.get("/subscriptions").then((res) => console.log(res));
+  }, []);
+
   return (
     <section className="flex w-full h-full">
       <div className="w-full">

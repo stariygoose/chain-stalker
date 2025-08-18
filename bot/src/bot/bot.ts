@@ -57,7 +57,7 @@ export class Bot implements IBot {
     @inject(TYPES.RedisStore)
     private readonly _store: IRedisStore,
   ) {
-    this._token = this._config.get(EnvVariables.TG_TOKEN);
+    this._token = this._config.get(EnvVariables.TG_BOT_TOKEN);
     this.bot = new Telegraf<MyContext>(this._token);
 
     this.bot.use(
@@ -177,4 +177,3 @@ export class Bot implements IBot {
     ];
   }
 }
-

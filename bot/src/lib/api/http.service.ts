@@ -35,7 +35,7 @@ export class HttpService {
       EnvVariables.BOT_SERVICE_NAME,
     );
 
-    this.BOT_SECRET_KEY = this._configService.get(EnvVariables.BOT_SECRET_KEY);
+    this.BOT_SECRET_KEY = this._configService.get(EnvVariables.TG_BOT_TOKEN);
     this.AUTHORIZATION = `Bot ${botServiceName}`;
   }
 

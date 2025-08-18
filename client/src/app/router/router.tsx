@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { DashboardPage, HomePage } from "@/pages/index";
 import { DashboardLayout } from "@/app/layouts";
 import { HomeLayout } from "@/app/layouts";
+import { TelegramCallbackPage } from "@/pages/telegram-callback/ui/TelegramCallbackPage";
 
 export const router = createBrowserRouter([
   {
@@ -25,5 +26,9 @@ export const router = createBrowserRouter([
         element: <DashboardPage />,
       },
     ],
+  },
+  {
+    path: "/telegram-callback",
+    element: <TelegramCallbackPage />,
   },
 ]);
