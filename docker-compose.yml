@@ -99,6 +99,7 @@ services:
   #     - ${NODE_MODE}
 
   mongodb:
+    container_name: mongo
     image: mongo:latest
     restart: always
     environment:
@@ -112,6 +113,8 @@ services:
       - ./mongo-init.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
       - ./mongod.conf:/config/mongod.conf:ro
       - ./.volume/mongodb:/data/db
+    ports:
+      - ${DB_PORT}:27017
     networks:
       - ${NODE_MODE}
 

@@ -1,1 +1,1 @@
-export { SidebarNavigation } from "./ui/navigation";
+export { SidebarNavigation } from "./ui/Navigation";

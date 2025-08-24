@@ -1,9 +1,15 @@
 import { RouterProvider } from "react-router-dom";
 import { router } from "@/app/router/router";
-import { useInitTheme } from "./model/useInitTheme";
+import { Notification } from "@/features/notification";
+import { useThemeInit } from "@/features/theme";
 
 export default function App() {
-  useInitTheme();
+  useThemeInit();
 
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} />
+      <Notification />
+    </>
+  );
 }

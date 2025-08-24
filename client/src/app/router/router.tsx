@@ -1,14 +1,22 @@
 import { createBrowserRouter } from "react-router-dom";
 
-import { DashboardPage, HomePage } from "@/pages/index";
-import { DashboardLayout } from "@/app/layouts";
-import { HomeLayout } from "@/app/layouts";
-import { TelegramCallbackPage } from "@/pages/telegram-callback/ui/TelegramCallbackPage";
+import {
+  NotFoundPage,
+  DashboardPage,
+  HomePage,
+  TelegramCallbackPage,
+} from "@/pages/index";
+import { DashboardLayout, HomeLayout } from "@/app/layouts";
+import { AxiosProvider } from "@/app/providers";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <HomeLayout />,
+    element: (
+      <AxiosProvider>
+        <HomeLayout />
+      </AxiosProvider>
+    ),
     children: [
       {
         index: true,
@@ -19,7 +27,11 @@ export const router = createBrowserRouter([
   },
   {
     path: "/dashboard",
-    element: <DashboardLayout />,
+    element: (
+      <AxiosProvider>
+        <DashboardLayout />
+      </AxiosProvider>
+    ),
     children: [
       {
         index: true,
@@ -30,5 +42,9 @@ export const router = createBrowserRouter([
   {
     path: "/telegram-callback",
     element: <TelegramCallbackPage />,
+  },
+  {
+    path: "*",
+    element: <NotFoundPage />,
   },
 ]);

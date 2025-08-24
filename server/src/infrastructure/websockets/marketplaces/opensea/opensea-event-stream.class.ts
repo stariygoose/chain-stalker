@@ -74,10 +74,11 @@ export class OpenseaEventStream {
   private async _handlePriceEvent(): Promise<void> {
     for (const userId of this._users) {
       try {
-        const subscription = await this._db.getOneByUserIdAndSlug(
+        const subscription = await this._db.getBy({
           userId,
-          this._slug,
-        );
+          "target.type": "nft",
+          "target.slug": this._slug,
+        });
         if (!subscription || !subscription.isActive) {
           this._logger.debug(
             `Subscription with slug ${this._slug} for user ${userId} doesn't exist or is not active.`,

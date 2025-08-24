@@ -1,3 +1,4 @@
-export { DashboardPage } from "@/pages/dashboard/ui/Dashboard";
-export { HomePage } from "@/pages/home/ui/HomePage";
-
+export { NotFoundPage } from "./not-found";
+export { DashboardPage } from "./dashboard";
+export { HomePage } from "./home";
+export { TelegramCallbackPage } from "./telegram-callback";

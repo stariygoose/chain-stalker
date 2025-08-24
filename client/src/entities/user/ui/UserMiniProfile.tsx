@@ -1,17 +1,16 @@
 import type { FC } from "react";
+import { useUserStore } from "../model/user.store";
 
-interface MiniProfileProps {
-  name: string;
-  username: string;
-}
+export const UserMiniProfile: FC = () => {
+  const user = useUserStore((state) => state.user);
 
-export const UserMiniProfile: FC<MiniProfileProps> = ({ name, username }) => {
+  // TODO: add Chainstalker logo as default pfp
   return (
     <div className="flex items-center">
-      <div className="w-12 h-12 bg-red-500 mr-2.5"></div>
+      <img className="w-12 h-12 mr-2.5 rounded-xl" src={user?.pfp} />
       <div className="flex flex-col">
-        <p className="text-xl">{name}</p>
-        <p className="text-sm  text-secondary">{username}</p>
+        <p className="text-xl">{user?.firstName}</p>
+        <p className="text-sm  text-secondary">@{user?.username}</p>
       </div>
     </div>
   );

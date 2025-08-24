@@ -16,7 +16,7 @@ import {
 import { ISubscriptionService } from "#application/services/subscription.service.js";
 import { TYPES } from "#di/types.js";
 import { joiValidator } from "#presentation/middlewares/validation/subscription.create.validator.js";
-import { subscriptionCreateSchema } from "#presentation/schemas/subscription.create.schema.js";
+import { subscriptionCreateSchema } from "#presentation/schemas/subscriptions/subscription.create.schema.js";
 import { Logger } from "#utils/logger.js";
 import { ICreateSubscriptionRequest } from "#application/dtos/create-subcsription.dto.js";
 import { ApiError } from "#infrastructure/errors/index.js";
@@ -59,7 +59,7 @@ export class SubscriptionController {
   }
 
   @httpGet("/:id")
-  public async getById(
+  public async getBy(
     @requestParam("id") id: string,
     @request() req: Request,
     @response() res: Response,
@@ -68,16 +68,13 @@ export class SubscriptionController {
     try {
       const { context } = req;
 
-      if (!context) {
-        throw new ApiError.BadRequestError("Missing context");
-      }
       this._logger.debug(
         `New request from user ${context.userId} to get a subscription data ${id}`,
       );
 
-      const subscription = await this._subscriptionService.getById(
+      const subscription = await this._subscriptionService.getBy(
         context.userId,
-        id,
+        { id },
       );
 
       return res.status(200).json(subscription);
@@ -95,9 +92,6 @@ export class SubscriptionController {
     try {
       const { body, context } = req;
 
-      if (!context) {
-        throw new ApiError.BadRequestError("Missing context");
-      }
       this._logger.debug(
         `New request from user ${context.userId} for creating a subscription.`,
       );
@@ -132,9 +126,6 @@ export class SubscriptionController {
     try {
       const { context } = req;
 
-      if (!context) {
-        throw new ApiError.BadRequestError("Missing context");
-      }
       const { userId } = context;
 
       this._logger.debug(
@@ -166,9 +157,6 @@ export class SubscriptionController {
     try {
       const { context } = req;
 
-      if (!context) {
-        throw new ApiError.BadRequestError("Missing context");
-      }
       const { userId } = context;
 
       this._logger.debug(

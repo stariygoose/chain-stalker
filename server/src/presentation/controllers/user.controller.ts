@@ -55,7 +55,9 @@ export class AuthController {
         path: "/",
       });
 
-      return res.redirect(`${this.DOMAIN_URL}/dashboard`);
+      return res.redirect(
+        `${this.DOMAIN_URL}/telegram-callback?userId=${req.query.id}&username=${req.query.username}&pfp=${req.query.photo_url}&firstName=${req.query.first_name}`,
+      );
     } catch (error) {
       next(error);
     }
