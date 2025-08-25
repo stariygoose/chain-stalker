@@ -31,6 +31,7 @@ export interface ISubscriptionService {
     userId: number,
     type?: unknown,
   ): Promise<GetAllSubscriptionsDto>;
+
   getBy(
     userId: number,
     filter: Partial<SubscriptionWithMeta>,
@@ -83,7 +84,12 @@ export class SubscriptionService implements ISubscriptionService {
     filter: Partial<SubscriptionWithMeta>,
   ): Promise<Subscription> {
     try {
-      const subscription = await this._db.getBy({ userId, ...filter });
+      let subscription: Subscription | null = null;
+      if (filter.id) {
+        subscription = await this._db.getBy({ userId, _id: filter.id });
+      } else {
+        subscription = await this._db.getBy({ userId, ...filter });
+      }
 
       if (!subscription) {
         throw new ApiError.NotFoundError("Subscription not found");
@@ -215,4 +221,3 @@ export class SubscriptionService implements ISubscriptionService {
     }
   }
 }
-
