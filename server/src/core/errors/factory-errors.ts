@@ -1,7 +1,9 @@
-import { DomainError } from "#core/errors/domain-error.abstract.js";
+import { DomainError } from "./domain-error.abstract";
 
 export class FactoryInvalidTargetTypeError extends DomainError {
-	constructor (invalidType: string) {
-		super(`Unresolved type for Subscription factory <${invalidType}>`);
-	}
+  constructor(type: string) {
+    super(
+      `Invalid target type while creating a subscription from factory: ${type}`,
+    );
+  }
 }

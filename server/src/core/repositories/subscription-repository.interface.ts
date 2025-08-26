@@ -1,35 +1,21 @@
-import {
-  Subscription,
-  SubscriptionWithMeta,
-} from "#core/entities/subscription/index.js";
-import { Strategy } from "#core/strategies/notification/notification-strategies.interface.js";
-
-export interface ISubscriptionRepository {
-  createOrUpdate(subscription: Subscription): Promise<SubscriptionWithMeta>;
-
-  updateStrategy(
-    filter: Partial<Record<string, any>>,
-    payload: Partial<Strategy>,
-  ): Promise<SubscriptionWithMeta | null>;
-
-  getByWithoutMeta(
-    filter: Partial<Record<string, unknown>>,
-  ): Promise<Subscription | null>;
-
-  getBy(
-    filter: Partial<Record<string, unknown>>,
-  ): Promise<SubscriptionWithMeta | null>;
-
-  getAll(
-    filter: Partial<Record<string, unknown>>,
-  ): Promise<SubscriptionWithMeta[] | null>;
-
-  changeStatusById(
-    userId: number,
-    id: string,
-  ): Promise<SubscriptionWithMeta | null>;
-
-  deleteById(userId: number, id: string): Promise<SubscriptionWithMeta | null>;
-
-  drop(): Promise<void>;
-}
+// import { Subscription } from "#core/entities/subscription";
+//
+// export interface ISubscriptionRepository {
+//   create(subscription: Subscription): Promise<SubscriptionWithMeta>;
+//   updateLastNotifiedPrice(
+//     id: string,
+//     price: number,
+//   ): Promise<SubscriptionWithMeta>;
+//   getBy(
+//     filter: Partial<SubscriptionWithMeta>,
+//   ): Promise<SubscriptionWithMeta | null>;
+//   getAll(
+//     filter: Partial<SubscriptionWithMeta>,
+//   ): Promise<SubscriptionWithMeta[]>;
+//   updateStrategy(
+//     id: string,
+//     strategy: Strategy,
+//   ): Promise<SubscriptionWithMeta | null>;
+//   changeStatusById(id: string): Promise<SubscriptionWithMeta | null>;
+//   deleteById(id: string): Promise<SubscriptionWithMeta | null>;
+// }

@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "NodeNext",
-		"moduleResolution": "nodenext",
+    "module": "ESNext",
+		"moduleResolution": "bundler",
 
 		"paths": {
-			"#*": ["./src/*"]
+			"#/*": ["./src/*"]
 		},
 		"baseUrl": ".",
 		"rootDir": "./src",
@@ -13,7 +13,7 @@
 
 		"types": [
 			"node",
-			"jest"
+      "vitest/globals"
 		],
 
 		"strict": true,
@@ -21,10 +21,22 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
 		"forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
 
 		"experimentalDecorators": true,  
     "emitDecoratorMetadata": true
   },
-	"include": ["src/**/*", "src/utils", "src/server.ts", "src/__tests__", "src/application", "src/presentation", "src/infrastructure", "src/di", "src/core", "src/config"],
-	"exclude": ["dist", "node_modules"],
+	"include": [
+    "src/**/*",
+    "src/utils", 
+    "src/server.ts", 
+    "src/__tests__", 
+    "src/application", 
+    "src/presentation", 
+    "src/infrastructure", 
+    "src/di", 
+    "src/core", 
+    "src/config"
+  ],
+  "exclude": ["dist", "node_modules"]
 }

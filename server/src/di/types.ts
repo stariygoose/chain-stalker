@@ -1,8 +1,7 @@
-import { Authenticator } from "#presentation/middlewares/auth/authenticator.js";
-
 export const TYPES = {
   Logger: Symbol.for("Logger"),
   ConfigService: Symbol.for("ConfigService"),
+  EventBus: Symbol.for("EventBus"),
 
   ServerConfig: Symbol.for("ServerConfig"),
   MongoDbConfig: Symbol.for("MongoDbConfig"),
@@ -40,4 +39,3 @@ export const TYPES = {
   OpenSeaAPI: Symbol.for("OpenSeaAPI"),
   BinanceAPI: Symbol.for("BinanceAPI"),
 };
-
