@@ -5,7 +5,11 @@
 		"moduleResolution": "bundler",
 
 		"paths": {
-			"#/*": ["./src/*"]
+      "#/*": ["src/*"],
+      "#domain/*": ["src/core/domain/*"],
+      "#application/*": ["./src/core/application/*"],
+      "#infrastructure/*": ["./src/infrastructure/*"],
+      "#presentation/*": ["./src/presentation/*"]
 		},
 		"baseUrl": ".",
 		"rootDir": "./src",
@@ -27,16 +31,7 @@
     "emitDecoratorMetadata": true
   },
 	"include": [
-    "src/**/*",
-    "src/utils", 
-    "src/server.ts", 
-    "src/__tests__", 
-    "src/application", 
-    "src/presentation", 
-    "src/infrastructure", 
-    "src/di", 
-    "src/core", 
-    "src/config"
+    "src"
   ],
   "exclude": ["dist", "node_modules"]
 }

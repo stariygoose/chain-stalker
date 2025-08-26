@@ -1,4 +1,8 @@
-import { NftTarget } from "#/core/entities/targets/nft.target";
+import { NftTarget } from "#domain/entities/target";
+import {
+  InvalidNumberException,
+  InvalidDateException,
+} from "#domain/exceptions";
 
 describe("Target Entities", () => {
   describe("Nft Target Entity", () => {
@@ -38,13 +42,27 @@ describe("Target Entities", () => {
         { value: NaN, desc: "not a number" },
       ];
 
-      invalidValues.forEach(({ value, desc }) => {
+      invalidValues.forEach(({ value }) => {
         expect(() => {
           new NftTarget({
             lastNotifiedAt: new Date(),
             lastNotifiedPrice: value,
           });
-        }).toThrow(`Invalid price value: ${desc}`);
+        }).toThrow(InvalidNumberException);
+      });
+
+      invalidValues.forEach(({ value }) => {
+        try {
+          new NftTarget({
+            lastNotifiedAt: new Date(),
+            lastNotifiedPrice: value,
+          });
+        } catch (error) {
+          expect(error).toBeInstanceOf(InvalidNumberException);
+          expect((error as InvalidNumberException).errorSlug).toBe(
+            "INVALID_NUMBER",
+          );
+        }
       });
     });
 
@@ -62,7 +80,21 @@ describe("Target Entities", () => {
             lastNotifiedAt: date,
             lastNotifiedPrice: 100,
           });
-        }).toThrow("Invalid date value");
+        }).toThrow(InvalidDateException);
+      });
+
+      invalidDates.forEach((date) => {
+        try {
+          new NftTarget({
+            lastNotifiedAt: date,
+            lastNotifiedPrice: 100,
+          });
+        } catch (error) {
+          expect(error).toBeInstanceOf(InvalidDateException);
+          expect((error as InvalidDateException).errorSlug).toBe(
+            "INVALID_DATE",
+          );
+        }
       });
     });
 
@@ -100,11 +132,5 @@ describe("Target Entities", () => {
       expect(original.state.lastNotifiedPrice).toBe(1000);
       expect(updated.state.lastNotifiedPrice).toBe(2000);
     });
-
-    // it("should handle invalid state gracefully", () => {
-    //   expect(() => {
-    //     new NftTarget(null as any);
-    //   }).toThrow();
-    // });
   });
 });

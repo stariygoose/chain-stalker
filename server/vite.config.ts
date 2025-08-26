@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "#": resolve(__dirname, "./src"),
+      "#domain": resolve(__dirname, "./src/core/domain/"),
     },
     extensions: [".ts", ".js", ".json"],
   },

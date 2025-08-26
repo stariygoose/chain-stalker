@@ -1,4 +1,7 @@
 {
+  "imports": {
+    "#/*": "./src/*"
+  },
   "type": "module",
   "scripts": {
     "start:v1": "node dist/server.js",
