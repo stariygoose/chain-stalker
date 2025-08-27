@@ -19,6 +19,7 @@ export class SubscriptionFactory {
     type: TargetType,
     currentPrice: number,
     lastNotifiedAt: Date = new Date(),
+    isActive: boolean = true,
   ): Subscription<PriceChangeStrategy> {
     const target = SubscriptionFactory.createTarget(
       type,
@@ -26,7 +27,7 @@ export class SubscriptionFactory {
       lastNotifiedAt,
     );
     const strategy = new PriceChangeStrategy({ mode, threshold });
-    return new Subscription(target, strategy);
+    return new Subscription(target, strategy, isActive);
   }
 
   static createIntervalChangeSubscription(
@@ -34,6 +35,7 @@ export class SubscriptionFactory {
     type: TargetType,
     currentPrice: number,
     lastNotifiedAt: Date = new Date(),
+    isActive: boolean = true,
   ) {
     const target = SubscriptionFactory.createTarget(
       type,
@@ -42,7 +44,7 @@ export class SubscriptionFactory {
     );
 
     const strategy = new TimeIntervalStrategy({ intervalMs });
-    return new Subscription(target, strategy);
+    return new Subscription(target, strategy, isActive);
   }
 
   private static createTarget(

@@ -1,13 +1,17 @@
 import { Strategy, StrategyMapper } from "#domain/entities/strategy";
 import { Target } from "#domain/entities/target";
-import { StrategyException } from "#domain/exceptions";
+import { StrategyException, SubscriptionException } from "#domain/exceptions";
 
 interface ISubscription<TStrategy extends Strategy> {
   readonly target: Target;
   readonly strategy: TStrategy;
+  isActive: boolean;
 
   shouldNotify(newState: StrategyMapper[TStrategy["type"]]): boolean;
   notifyAndUpdate(newPrice: number): ISubscription<TStrategy>;
+  updateStrategy(newStrategy: Strategy): ISubscription<Strategy>;
+  activate(): void;
+  deactivate(): void;
 }
 
 export class Subscription<TStrategy extends Strategy>
@@ -16,9 +20,12 @@ export class Subscription<TStrategy extends Strategy>
   constructor(
     readonly target: Target,
     readonly strategy: TStrategy,
+    public isActive: boolean = true,
   ) {}
 
   public shouldNotify(newState: StrategyMapper[TStrategy["type"]]): boolean {
+    this.assertIsActive();
+
     const { type } = this.strategy;
     switch (type) {
       case "price-change":
@@ -40,6 +47,8 @@ export class Subscription<TStrategy extends Strategy>
   }
 
   public notifyAndUpdate(newPrice: number): ISubscription<TStrategy> {
+    this.assertIsActive();
+
     const newState = {
       lastNotifiedPrice: newPrice,
       lastNotifiedAt: new Date(),
@@ -47,6 +56,24 @@ export class Subscription<TStrategy extends Strategy>
 
     const newTarget = this.target.withUpdatedState(newState);
 
-    return new Subscription(newTarget, this.strategy);
+    return new Subscription(newTarget, this.strategy, this.isActive);
+  }
+
+  public updateStrategy(newStrategy: Strategy): ISubscription<Strategy> {
+    return new Subscription(this.target, newStrategy, this.isActive);
+  }
+
+  public activate(): void {
+    this.isActive = true;
+  }
+
+  public deactivate(): void {
+    this.isActive = false;
+  }
+
+  private assertIsActive(): void {
+    if (!this.isActive) {
+      throw new SubscriptionException("subscription is not active");
+    }
   }
 }
