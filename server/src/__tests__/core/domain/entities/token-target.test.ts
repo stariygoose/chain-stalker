@@ -3,13 +3,18 @@ import { TokenTarget } from "#domain/entities/target";
 import { InvalidNumberException, InvalidDateException } from "#domain/exceptions";
 
 describe("TokenTarget Entity", () => {
+  const tokenMeta = {
+    source: "coingecko",
+    symbol: "BTC",
+    decimals: 8
+  };
   describe("Constructor", () => {
     it("should create a valid TokenTarget with correct type", () => {
       const state = {
         lastNotifiedAt: new Date("2025-01-01"),
         lastNotifiedPrice: 100,
       };
-      const target = new TokenTarget(state);
+      const target = new TokenTarget(tokenMeta, state);
 
       expect(target.type).toBe("token");
       expect(target.state.lastNotifiedAt).toEqual(state.lastNotifiedAt);
@@ -21,7 +26,7 @@ describe("TokenTarget Entity", () => {
         lastNotifiedAt: new Date(),
         lastNotifiedPrice: 0,
       };
-      const target = new TokenTarget(state);
+      const target = new TokenTarget(tokenMeta, state);
 
       expect(target.state.lastNotifiedPrice).toBe(0);
     });
@@ -32,7 +37,7 @@ describe("TokenTarget Entity", () => {
         lastNotifiedAt: new Date(),
         lastNotifiedPrice: smallPrice,
       };
-      const target = new TokenTarget(state);
+      const target = new TokenTarget(tokenMeta, state);
 
       expect(target.state.lastNotifiedPrice).toBe(smallPrice);
     });
@@ -43,7 +48,7 @@ describe("TokenTarget Entity", () => {
         lastNotifiedAt: new Date(),
         lastNotifiedPrice: maxPrice,
       };
-      const target = new TokenTarget(state);
+      const target = new TokenTarget(tokenMeta, state);
 
       expect(target.state.lastNotifiedPrice).toBe(maxPrice);
     });
@@ -54,7 +59,7 @@ describe("TokenTarget Entity", () => {
         lastNotifiedAt: validDate,
         lastNotifiedPrice: 100,
       };
-      const target = new TokenTarget(state);
+      const target = new TokenTarget(tokenMeta, state);
 
       expect(target.state.lastNotifiedAt).toEqual(validDate);
     });
@@ -65,21 +70,21 @@ describe("TokenTarget Entity", () => {
 
     it("should throw InvalidNumberException for negative numbers", () => {
       expect(() => {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: -1,
         });
       }).toThrow(InvalidNumberException);
 
       expect(() => {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: -0.1,
         });
       }).toThrow(InvalidNumberException);
 
       expect(() => {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: Number.MIN_SAFE_INTEGER,
         });
@@ -88,7 +93,7 @@ describe("TokenTarget Entity", () => {
 
     it("should throw InvalidNumberException for Infinity", () => {
       expect(() => {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: Infinity,
         });
@@ -97,7 +102,7 @@ describe("TokenTarget Entity", () => {
 
     it("should throw InvalidNumberException for -Infinity", () => {
       expect(() => {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: -Infinity,
         });
@@ -106,7 +111,7 @@ describe("TokenTarget Entity", () => {
 
     it("should throw InvalidNumberException for NaN", () => {
       expect(() => {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: NaN,
         });
@@ -115,21 +120,21 @@ describe("TokenTarget Entity", () => {
 
     it("should throw InvalidNumberException for non-number types", () => {
       expect(() => {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: "100" as any,
         });
       }).toThrow(InvalidNumberException);
 
       expect(() => {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: null as any,
         });
       }).toThrow(InvalidNumberException);
 
       expect(() => {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: undefined as any,
         });
@@ -138,7 +143,7 @@ describe("TokenTarget Entity", () => {
 
     it("should have correct error properties for invalid numbers", () => {
       try {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: -100,
         });
@@ -163,7 +168,7 @@ describe("TokenTarget Entity", () => {
 
       invalidDates.forEach((invalidDate) => {
         expect(() => {
-          new TokenTarget({
+          new TokenTarget(tokenMeta, {
             lastNotifiedAt: invalidDate,
             lastNotifiedPrice: validPrice,
           });
@@ -173,14 +178,14 @@ describe("TokenTarget Entity", () => {
 
     it("should throw InvalidDateException for non-Date objects", () => {
       expect(() => {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: "2025-01-01" as any,
           lastNotifiedPrice: validPrice,
         });
       }).toThrow(InvalidDateException);
 
       expect(() => {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: 1672531200000 as any, // timestamp
           lastNotifiedPrice: validPrice,
         });
@@ -189,7 +194,7 @@ describe("TokenTarget Entity", () => {
 
     it("should have correct error properties for invalid dates", () => {
       try {
-        new TokenTarget({
+        new TokenTarget(tokenMeta, {
           lastNotifiedAt: new Date("invalid"),
           lastNotifiedPrice: validPrice,
         });
@@ -212,7 +217,7 @@ describe("TokenTarget Entity", () => {
       ];
 
       extremeDates.forEach((date) => {
-        const target = new TokenTarget({
+        const target = new TokenTarget(tokenMeta, {
           lastNotifiedAt: date,
           lastNotifiedPrice: 100,
         });
@@ -232,7 +237,7 @@ describe("TokenTarget Entity", () => {
       ];
 
       extremePrices.forEach((price) => {
-        const target = new TokenTarget({
+        const target = new TokenTarget(tokenMeta, {
           lastNotifiedAt: new Date(),
           lastNotifiedPrice: price,
         });
@@ -243,7 +248,7 @@ describe("TokenTarget Entity", () => {
 
   describe("withUpdatedState Method", () => {
     it("should create new instance with updated state", () => {
-      const original = new TokenTarget({
+      const original = new TokenTarget(tokenMeta, {
         lastNotifiedAt: new Date("2025-01-01"),
         lastNotifiedPrice: 100,
       });
@@ -262,7 +267,7 @@ describe("TokenTarget Entity", () => {
     });
 
     it("should validate new state in withUpdatedState", () => {
-      const original = new TokenTarget({
+      const original = new TokenTarget(tokenMeta, {
         lastNotifiedAt: new Date(),
         lastNotifiedPrice: 100,
       });
@@ -283,7 +288,7 @@ describe("TokenTarget Entity", () => {
     });
 
     it("should maintain type after update", () => {
-      const original = new TokenTarget({
+      const original = new TokenTarget(tokenMeta, {
         lastNotifiedAt: new Date(),
         lastNotifiedPrice: 100,
       });
@@ -302,7 +307,7 @@ describe("TokenTarget Entity", () => {
         lastNotifiedAt: new Date("2025-01-01"),
         lastNotifiedPrice: 100,
       };
-      const original = new TokenTarget(state);
+      const original = new TokenTarget(tokenMeta, state);
       const updated = original.withUpdatedState(state);
 
       expect(updated).not.toBe(original);

@@ -1,5 +1,6 @@
 import { StrategyException } from "#/core/domain/exceptions";
 import { NumberValidator } from "#/core/domain/utils/validator";
+import { Target } from "#domain/entities/target";
 import { IStrategy } from "../base/strategy.interface";
 import { PriceChangeStrategyConfig } from "./types";
 
@@ -7,7 +8,7 @@ interface IPriceChangeStrategy extends IStrategy<number> {
   readonly type: "price-change";
   readonly config: PriceChangeStrategyConfig;
 
-  shouldNotify(currentState: number, newState: number): boolean;
+  shouldNotify(target: Target, newState: number): boolean;
 }
 
 export class PriceChangeStrategy implements IPriceChangeStrategy {
@@ -21,8 +22,8 @@ export class PriceChangeStrategy implements IPriceChangeStrategy {
     };
   }
 
-  public shouldNotify(currentState: number, newState: number): boolean {
-    return this.calculate(currentState, newState);
+  public shouldNotify(target: Target, newState: number): boolean {
+    return this.calculate(target.state.lastNotifiedPrice, newState);
   }
 
   private calculate(currentPrice: number, newPrice: number): boolean {

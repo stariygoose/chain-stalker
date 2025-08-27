@@ -3,13 +3,20 @@ import { NftTarget } from "#domain/entities/target";
 import { InvalidNumberException, InvalidDateException } from "#domain/exceptions";
 
 describe("NftTarget Entity", () => {
+  const nftMeta = {
+    name: "Test NFT",
+    slug: "test-nft", 
+    source: "opensea",
+    chain: "ethereum",
+    symbol: "TEST"
+  };
   describe("Constructor", () => {
     it("should create a valid NftTarget with correct type", () => {
       const state = {
         lastNotifiedAt: new Date("2025-01-01"),
         lastNotifiedPrice: 1.5,
       };
-      const target = new NftTarget(state);
+      const target = new NftTarget(nftMeta, state);
 
       expect(target.type).toBe("nft");
       expect(target.state.lastNotifiedAt).toEqual(state.lastNotifiedAt);
@@ -21,7 +28,7 @@ describe("NftTarget Entity", () => {
         lastNotifiedAt: new Date(),
         lastNotifiedPrice: 0,
       };
-      const target = new NftTarget(state);
+      const target = new NftTarget(nftMeta, state);
 
       expect(target.state.lastNotifiedPrice).toBe(0);
     });
@@ -32,7 +39,7 @@ describe("NftTarget Entity", () => {
         lastNotifiedAt: new Date(),
         lastNotifiedPrice: fractionalPrice,
       };
-      const target = new NftTarget(state);
+      const target = new NftTarget(nftMeta, state);
 
       expect(target.state.lastNotifiedPrice).toBe(fractionalPrice);
     });
@@ -43,7 +50,7 @@ describe("NftTarget Entity", () => {
         lastNotifiedAt: new Date(),
         lastNotifiedPrice: highPrice,
       };
-      const target = new NftTarget(state);
+      const target = new NftTarget(nftMeta, state);
 
       expect(target.state.lastNotifiedPrice).toBe(highPrice);
     });
@@ -54,7 +61,7 @@ describe("NftTarget Entity", () => {
         lastNotifiedAt: validDate,
         lastNotifiedPrice: 2.5,
       };
-      const target = new NftTarget(state);
+      const target = new NftTarget(nftMeta, state);
 
       expect(target.state.lastNotifiedAt).toEqual(validDate);
     });
@@ -65,21 +72,21 @@ describe("NftTarget Entity", () => {
 
     it("should throw InvalidNumberException for negative prices", () => {
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: -1,
         });
       }).toThrow(InvalidNumberException);
 
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: -0.1,
         });
       }).toThrow(InvalidNumberException);
 
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: Number.MIN_SAFE_INTEGER,
         });
@@ -88,7 +95,7 @@ describe("NftTarget Entity", () => {
 
     it("should throw InvalidNumberException for Infinity", () => {
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: Infinity,
         });
@@ -97,7 +104,7 @@ describe("NftTarget Entity", () => {
 
     it("should throw InvalidNumberException for -Infinity", () => {
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: -Infinity,
         });
@@ -106,7 +113,7 @@ describe("NftTarget Entity", () => {
 
     it("should throw InvalidNumberException for NaN", () => {
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: NaN,
         });
@@ -115,28 +122,28 @@ describe("NftTarget Entity", () => {
 
     it("should throw InvalidNumberException for non-number types", () => {
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: "2.5" as any,
         });
       }).toThrow(InvalidNumberException);
 
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: null as any,
         });
       }).toThrow(InvalidNumberException);
 
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: undefined as any,
         });
       }).toThrow(InvalidNumberException);
 
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: {} as any,
         });
@@ -145,7 +152,7 @@ describe("NftTarget Entity", () => {
 
     it("should have correct error properties for invalid numbers", () => {
       try {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: validDate,
           lastNotifiedPrice: -5.5,
         });
@@ -173,7 +180,7 @@ describe("NftTarget Entity", () => {
 
       invalidDates.forEach((invalidDate) => {
         expect(() => {
-          new NftTarget({
+          new NftTarget(nftMeta, {
             lastNotifiedAt: invalidDate,
             lastNotifiedPrice: validPrice,
           });
@@ -183,28 +190,28 @@ describe("NftTarget Entity", () => {
 
     it("should throw InvalidDateException for non-Date objects", () => {
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: "2025-01-01" as any,
           lastNotifiedPrice: validPrice,
         });
       }).toThrow(InvalidDateException);
 
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: 1672531200000 as any, // timestamp number
           lastNotifiedPrice: validPrice,
         });
       }).toThrow(InvalidDateException);
 
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: null as any,
           lastNotifiedPrice: validPrice,
         });
       }).toThrow(InvalidDateException);
 
       expect(() => {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: undefined as any,
           lastNotifiedPrice: validPrice,
         });
@@ -214,7 +221,7 @@ describe("NftTarget Entity", () => {
     it("should have correct error properties for invalid dates", () => {
       const invalidDate = new Date("invalid");
       try {
-        new NftTarget({
+        new NftTarget(nftMeta, {
           lastNotifiedAt: invalidDate,
           lastNotifiedPrice: validPrice,
         });
@@ -238,7 +245,7 @@ describe("NftTarget Entity", () => {
       ];
 
       extremeDates.forEach((date) => {
-        const target = new NftTarget({
+        const target = new NftTarget(nftMeta, {
           lastNotifiedAt: date,
           lastNotifiedPrice: 1.0,
         });
@@ -259,7 +266,7 @@ describe("NftTarget Entity", () => {
       ];
 
       extremePrices.forEach((price) => {
-        const target = new NftTarget({
+        const target = new NftTarget(nftMeta, {
           lastNotifiedAt: new Date(),
           lastNotifiedPrice: price,
         });
@@ -270,7 +277,7 @@ describe("NftTarget Entity", () => {
 
   describe("withUpdatedState Method", () => {
     it("should create new instance with updated state", () => {
-      const original = new NftTarget({
+      const original = new NftTarget(nftMeta, {
         lastNotifiedAt: new Date("2025-01-01"),
         lastNotifiedPrice: 1.5,
       });
@@ -289,7 +296,7 @@ describe("NftTarget Entity", () => {
     });
 
     it("should validate new state in withUpdatedState", () => {
-      const original = new NftTarget({
+      const original = new NftTarget(nftMeta, {
         lastNotifiedAt: new Date(),
         lastNotifiedPrice: 1.0,
       });
@@ -317,7 +324,7 @@ describe("NftTarget Entity", () => {
     });
 
     it("should maintain type after update", () => {
-      const original = new NftTarget({
+      const original = new NftTarget(nftMeta, {
         lastNotifiedAt: new Date(),
         lastNotifiedPrice: 1.0,
       });
@@ -336,7 +343,7 @@ describe("NftTarget Entity", () => {
         lastNotifiedAt: new Date("2025-01-01"),
         lastNotifiedPrice: 1.0,
       };
-      const original = new NftTarget(state);
+      const original = new NftTarget(nftMeta, state);
       const updated = original.withUpdatedState(state);
 
       expect(updated).not.toBe(original);
@@ -344,7 +351,7 @@ describe("NftTarget Entity", () => {
     });
 
     it("should handle price updates from 0 to positive", () => {
-      const original = new NftTarget({
+      const original = new NftTarget(nftMeta, {
         lastNotifiedAt: new Date(),
         lastNotifiedPrice: 0,
       });
@@ -371,7 +378,7 @@ describe("NftTarget Entity", () => {
       ];
 
       nftScenarios.forEach(({ price, description }) => {
-        const target = new NftTarget({
+        const target = new NftTarget(nftMeta, {
           lastNotifiedAt: new Date(),
           lastNotifiedPrice: price,
         });
@@ -382,7 +389,7 @@ describe("NftTarget Entity", () => {
 
     it("should handle floor price changes", () => {
       // Simulate floor price going from high to low (market crash)
-      const original = new NftTarget({
+      const original = new NftTarget(nftMeta, {
         lastNotifiedAt: new Date("2025-01-01"),
         lastNotifiedPrice: 50.0,
       });

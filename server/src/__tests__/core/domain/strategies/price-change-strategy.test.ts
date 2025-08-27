@@ -1,8 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { PriceChangeStrategy } from "#domain/entities/strategy";
+import { TokenTarget } from "#domain/entities/target";
 import { StrategyException, InvalidNumberException } from "#domain/exceptions";
 
 describe("PriceChangeStrategy", () => {
+  const createTarget = (lastNotifiedPrice: number) => new TokenTarget(
+    { source: "test", symbol: "TEST", decimals: 18 },
+    { lastNotifiedPrice, lastNotifiedAt: new Date() }
+  );
+
   describe("Constructor", () => {
     it("should create strategy with percentage mode", () => {
       const strategy = new PriceChangeStrategy({
@@ -113,70 +119,70 @@ describe("PriceChangeStrategy", () => {
 
     it("should notify when percentage increase exceeds threshold", () => {
       // 100 -> 120 = 20% increase (exceeds 10%)
-      expect(strategy.shouldNotify(100, 120)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(100), 120)).toBe(true);
 
       // 100 -> 115 = 15% increase (exceeds 10%)
-      expect(strategy.shouldNotify(100, 115)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(100), 115)).toBe(true);
 
       // 50 -> 60 = 20% increase
-      expect(strategy.shouldNotify(50, 60)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(50), 60)).toBe(true);
     });
 
     it("should not notify when percentage increase is below threshold", () => {
       // 100 -> 105 = 5% increase (below 10%)
-      expect(strategy.shouldNotify(100, 105)).toBe(false);
+      expect(strategy.shouldNotify(createTarget(100), 105)).toBe(false);
 
       // 100 -> 109 = 9% increase (below 10%)
-      expect(strategy.shouldNotify(100, 109)).toBe(false);
+      expect(strategy.shouldNotify(createTarget(100), 109)).toBe(false);
 
       // 50 -> 54 = 8% increase
-      expect(strategy.shouldNotify(50, 54)).toBe(false);
+      expect(strategy.shouldNotify(createTarget(50), 54)).toBe(false);
     });
 
     it("should handle exact threshold boundary", () => {
       // 100 -> 110 = exactly 10% increase
-      expect(strategy.shouldNotify(100, 110)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(100), 110)).toBe(true);
 
       // 50 -> 55 = exactly 10% increase
-      expect(strategy.shouldNotify(50, 55)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(50), 55)).toBe(true);
     });
 
     it("should handle price decreases", () => {
       // 100 -> 85 = 15% decrease (exceeds 10%)
-      expect(strategy.shouldNotify(100, 85)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(100), 85)).toBe(true);
 
       // 100 -> 95 = 5% decrease (below 10%)
-      expect(strategy.shouldNotify(100, 95)).toBe(false);
+      expect(strategy.shouldNotify(createTarget(100), 95)).toBe(false);
 
       // 100 -> 90 = exactly 10% decrease
-      expect(strategy.shouldNotify(100, 90)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(100), 90)).toBe(true);
     });
 
     it("should handle zero current price", () => {
       // From 0 to any positive value = infinite % change, should always notify
-      expect(strategy.shouldNotify(0, 1)).toBe(true);
-      expect(strategy.shouldNotify(0, 0.01)).toBe(true);
-      expect(strategy.shouldNotify(0, 100)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(0), 1)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(0), 0.01)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(0), 100)).toBe(true);
     });
 
     it("should handle zero new price", () => {
       // From any positive to 0 = 100% decrease, should notify if threshold < 100
-      expect(strategy.shouldNotify(100, 0)).toBe(true);
-      expect(strategy.shouldNotify(0.01, 0)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(100), 0)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(0.01), 0)).toBe(true);
     });
 
     it("should handle same price (no change)", () => {
       // Same price = 0% change, should not notify
-      expect(strategy.shouldNotify(100, 100)).toBe(false);
-      expect(strategy.shouldNotify(0, 0)).toBe(false);
+      expect(strategy.shouldNotify(createTarget(100), 100)).toBe(false);
+      expect(strategy.shouldNotify(createTarget(0), 0)).toBe(false);
     });
 
     it("should work with fractional prices", () => {
       // 0.1 -> 0.12 = 20% increase
-      expect(strategy.shouldNotify(0.1, 0.12)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(0.1), 0.12)).toBe(true);
 
       // 0.1 -> 0.105 = 5% increase
-      expect(strategy.shouldNotify(0.1, 0.105)).toBe(false);
+      expect(strategy.shouldNotify(createTarget(0.1), 0.105)).toBe(false);
     });
 
     it("should work with high precision calculations", () => {
@@ -186,8 +192,8 @@ describe("PriceChangeStrategy", () => {
       });
 
       // Very small change that exceeds 0.1%
-      expect(preciseStrategy.shouldNotify(1000, 1001.5)).toBe(true); // 0.15%
-      expect(preciseStrategy.shouldNotify(1000, 1000.5)).toBe(false); // 0.05%
+      expect(preciseStrategy.shouldNotify(createTarget(1000), 1001.5)).toBe(true); // 0.15%
+      expect(preciseStrategy.shouldNotify(createTarget(1000), 1000.5)).toBe(false); // 0.05%
     });
   });
 
@@ -203,49 +209,49 @@ describe("PriceChangeStrategy", () => {
 
     it("should notify when absolute change exceeds threshold", () => {
       // |100 - 120| = 20 (exceeds 15)
-      expect(strategy.shouldNotify(100, 120)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(100), 120)).toBe(true);
 
       // |100 - 85| = 15 (equals 15, should notify)
-      expect(strategy.shouldNotify(100, 85)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(100), 85)).toBe(true);
 
       // |50 - 70| = 20 (exceeds 15)
-      expect(strategy.shouldNotify(50, 70)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(50), 70)).toBe(true);
     });
 
     it("should not notify when absolute change is below threshold", () => {
       // |100 - 110| = 10 (below 15)
-      expect(strategy.shouldNotify(100, 110)).toBe(false);
+      expect(strategy.shouldNotify(createTarget(100), 110)).toBe(false);
 
       // |100 - 90| = 10 (below 15)
-      expect(strategy.shouldNotify(100, 90)).toBe(false);
+      expect(strategy.shouldNotify(createTarget(100), 90)).toBe(false);
 
       // |50 - 64| = 14 (below 15)
-      expect(strategy.shouldNotify(50, 64)).toBe(false);
+      expect(strategy.shouldNotify(createTarget(50), 64)).toBe(false);
     });
 
     it("should handle exact threshold boundary", () => {
       // |100 - 115| = exactly 15
-      expect(strategy.shouldNotify(100, 115)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(100), 115)).toBe(true);
 
       // |100 - 85| = exactly 15
-      expect(strategy.shouldNotify(100, 85)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(100), 85)).toBe(true);
     });
 
     it("should work symmetrically for increases and decreases", () => {
       // Same absolute change, different directions
-      expect(strategy.shouldNotify(100, 120)).toBe(strategy.shouldNotify(100, 80));
-      expect(strategy.shouldNotify(50, 70)).toBe(strategy.shouldNotify(50, 30));
+      expect(strategy.shouldNotify(createTarget(100), 120)).toBe(strategy.shouldNotify(createTarget(100), 80));
+      expect(strategy.shouldNotify(createTarget(50), 70)).toBe(strategy.shouldNotify(createTarget(50), 30));
     });
 
     it("should handle zero prices", () => {
       // From 0 to 20 = absolute change of 20 (exceeds 15)
-      expect(strategy.shouldNotify(0, 20)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(0), 20)).toBe(true);
 
       // From 0 to 10 = absolute change of 10 (below 15)
-      expect(strategy.shouldNotify(0, 10)).toBe(false);
+      expect(strategy.shouldNotify(createTarget(0), 10)).toBe(false);
 
       // From 20 to 0 = absolute change of 20 (exceeds 15)
-      expect(strategy.shouldNotify(20, 0)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(20), 0)).toBe(true);
     });
 
     it("should handle fractional changes", () => {
@@ -255,10 +261,10 @@ describe("PriceChangeStrategy", () => {
       });
 
       // 1.0 -> 1.6 = 0.6 absolute change (exceeds 0.5)
-      expect(fractionalStrategy.shouldNotify(1.0, 1.6)).toBe(true);
+      expect(fractionalStrategy.shouldNotify(createTarget(1.0), 1.6)).toBe(true);
 
       // 1.0 -> 1.3 = 0.3 absolute change (below 0.5)
-      expect(fractionalStrategy.shouldNotify(1.0, 1.3)).toBe(false);
+      expect(fractionalStrategy.shouldNotify(createTarget(1.0), 1.3)).toBe(false);
     });
 
     it("should handle very small thresholds", () => {
@@ -267,8 +273,8 @@ describe("PriceChangeStrategy", () => {
         threshold: 0.001,
       });
 
-      expect(smallThresholdStrategy.shouldNotify(1, 1.002)).toBe(true);
-      expect(smallThresholdStrategy.shouldNotify(1, 1.0005)).toBe(false);
+      expect(smallThresholdStrategy.shouldNotify(createTarget(1), 1.002)).toBe(true);
+      expect(smallThresholdStrategy.shouldNotify(createTarget(1), 1.0005)).toBe(false);
     });
   });
 
@@ -283,11 +289,11 @@ describe("PriceChangeStrategy", () => {
       invalidStrategy.type = "price-change";
 
       expect(() => {
-        invalidStrategy.shouldNotify(100, 120);
+        invalidStrategy.shouldNotify(createTarget(100), 120);
       }).toThrow(StrategyException);
 
       try {
-        invalidStrategy.shouldNotify(100, 120);
+        invalidStrategy.shouldNotify(createTarget(100), 120);
       } catch (error) {
         expect(error).toBeInstanceOf(StrategyException);
         expect((error as StrategyException).message).toContain("unknown mode");
@@ -304,12 +310,12 @@ describe("PriceChangeStrategy", () => {
       });
 
       // Very large numbers
-      expect(strategy.shouldNotify(1e10, 1.6e10)).toBe(true); // 60% increase
-      expect(strategy.shouldNotify(1e10, 1.3e10)).toBe(false); // 30% increase
+      expect(strategy.shouldNotify(createTarget(1e10), 1.6e10)).toBe(true); // 60% increase
+      expect(strategy.shouldNotify(createTarget(1e10), 1.3e10)).toBe(false); // 30% increase
 
       // Very small numbers
-      expect(strategy.shouldNotify(1e-10, 1.6e-10)).toBe(true); // 60% increase
-      expect(strategy.shouldNotify(1e-10, 1.3e-10)).toBe(false); // 30% increase
+      expect(strategy.shouldNotify(createTarget(1e-10), 1.6e-10)).toBe(true); // 60% increase
+      expect(strategy.shouldNotify(createTarget(1e-10), 1.3e-10)).toBe(false); // 30% increase
     });
 
     it("should handle extreme price values in absolute mode", () => {
@@ -319,11 +325,11 @@ describe("PriceChangeStrategy", () => {
       });
 
       // Large numbers
-      expect(strategy.shouldNotify(1e10, 1e10 + 2e6)).toBe(true); // Change of 2M
-      expect(strategy.shouldNotify(1e10, 1e10 + 5e5)).toBe(false); // Change of 500K
+      expect(strategy.shouldNotify(createTarget(1e10), 1e10 + 2e6)).toBe(true); // Change of 2M
+      expect(strategy.shouldNotify(createTarget(1e10), 1e10 + 5e5)).toBe(false); // Change of 500K
 
       // Small numbers with large threshold
-      expect(strategy.shouldNotify(1, 1000000.5)).toBe(false); // Change less than 1M
+      expect(strategy.shouldNotify(createTarget(1), 1000000.5)).toBe(false); // Change less than 1M
     });
 
     it("should handle precision edge cases", () => {
@@ -337,8 +343,8 @@ describe("PriceChangeStrategy", () => {
       const priceWith0001Percent = basePrice * 1.00001;
       const priceWith0002Percent = basePrice * 1.00002;
 
-      expect(strategy.shouldNotify(basePrice, priceWith0002Percent)).toBe(true);
-      expect(strategy.shouldNotify(basePrice, priceWith0001Percent)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(basePrice), priceWith0002Percent)).toBe(true);
+      expect(strategy.shouldNotify(createTarget(basePrice), priceWith0001Percent)).toBe(true);
     });
 
     it("should handle zero threshold edge cases", () => {
@@ -353,12 +359,12 @@ describe("PriceChangeStrategy", () => {
       });
 
       // Any change should notify with zero threshold
-      expect(zeroThresholdPercentage.shouldNotify(100, 100.001)).toBe(true);
-      expect(zeroThresholdAbsolute.shouldNotify(100, 100.001)).toBe(true);
+      expect(zeroThresholdPercentage.shouldNotify(createTarget(100), 100.001)).toBe(true);
+      expect(zeroThresholdAbsolute.shouldNotify(createTarget(100), 100.001)).toBe(true);
 
       // No change should not notify
-      expect(zeroThresholdPercentage.shouldNotify(100, 100)).toBe(false);
-      expect(zeroThresholdAbsolute.shouldNotify(100, 100)).toBe(false);
+      expect(zeroThresholdPercentage.shouldNotify(createTarget(100), 100)).toBe(false);
+      expect(zeroThresholdAbsolute.shouldNotify(createTarget(100), 100)).toBe(false);
     });
   });
 
@@ -370,13 +376,13 @@ describe("PriceChangeStrategy", () => {
       });
 
       // Bitcoin price movements
-      expect(cryptoStrategy.shouldNotify(50000, 52600)).toBe(true); // 5.2% increase
-      expect(cryptoStrategy.shouldNotify(50000, 52499)).toBe(false); // 4.998% increase
-      expect(cryptoStrategy.shouldNotify(50000, 47500)).toBe(true); // 5% decrease
+      expect(cryptoStrategy.shouldNotify(createTarget(50000), 52600)).toBe(true); // 5.2% increase
+      expect(cryptoStrategy.shouldNotify(createTarget(50000), 52499)).toBe(false); // 4.998% increase
+      expect(cryptoStrategy.shouldNotify(createTarget(50000), 47500)).toBe(true); // 5% decrease
 
       // Altcoin volatility
-      expect(cryptoStrategy.shouldNotify(1.50, 1.60)).toBe(true); // ~6.7% increase
-      expect(cryptoStrategy.shouldNotify(1.50, 1.55)).toBe(false); // ~3.3% increase
+      expect(cryptoStrategy.shouldNotify(createTarget(1.50), 1.60)).toBe(true); // ~6.7% increase
+      expect(cryptoStrategy.shouldNotify(createTarget(1.50), 1.55)).toBe(false); // ~3.3% increase
     });
 
     it("should handle NFT floor price changes", () => {
@@ -386,13 +392,13 @@ describe("PriceChangeStrategy", () => {
       });
 
       // NFT floor movements
-      expect(nftStrategy.shouldNotify(2.0, 2.15)).toBe(true); // 0.15 ETH increase
-      expect(nftStrategy.shouldNotify(2.0, 2.05)).toBe(false); // 0.05 ETH increase
-      expect(nftStrategy.shouldNotify(2.0, 1.85)).toBe(true); // 0.15 ETH decrease
+      expect(nftStrategy.shouldNotify(createTarget(2.0), 2.15)).toBe(true); // 0.15 ETH increase
+      expect(nftStrategy.shouldNotify(createTarget(2.0), 2.05)).toBe(false); // 0.05 ETH increase
+      expect(nftStrategy.shouldNotify(createTarget(2.0), 1.85)).toBe(true); // 0.15 ETH decrease
 
       // High-value NFT movements
-      expect(nftStrategy.shouldNotify(50.0, 50.5)).toBe(true); // 0.5 ETH change
-      expect(nftStrategy.shouldNotify(50.0, 50.05)).toBe(false); // 0.05 ETH change
+      expect(nftStrategy.shouldNotify(createTarget(50.0), 50.5)).toBe(true); // 0.5 ETH change
+      expect(nftStrategy.shouldNotify(createTarget(50.0), 50.05)).toBe(false); // 0.05 ETH change
     });
 
     it("should handle stock price monitoring", () => {
@@ -402,9 +408,9 @@ describe("PriceChangeStrategy", () => {
       });
 
       // Stock price movements
-      expect(stockStrategy.shouldNotify(150.00, 153.10)).toBe(true); // ~2.07% increase
-      expect(stockStrategy.shouldNotify(150.00, 152.90)).toBe(false); // ~1.93% increase
-      expect(stockStrategy.shouldNotify(150.00, 147.00)).toBe(true); // 2% decrease
+      expect(stockStrategy.shouldNotify(createTarget(150.00), 153.10)).toBe(true); // ~2.07% increase
+      expect(stockStrategy.shouldNotify(createTarget(150.00), 152.90)).toBe(false); // ~1.93% increase
+      expect(stockStrategy.shouldNotify(createTarget(150.00), 147.00)).toBe(true); // 2% decrease
     });
   });
 });

@@ -9,62 +9,96 @@ import {
   TargetType,
   TokenTarget,
 } from "#domain/entities/target";
+import { NftTargetMeta } from "#domain/entities/target/nft/types";
+import { TokenTargetMeta } from "#domain/entities/target/token/types";
+import { TargetState } from "#domain/entities/target/base/types";
 import { Subscription } from "#domain/entities/subscription";
 import { FactoryException } from "#domain/exceptions";
 
+export interface PriceChangeSubscriptionParams {
+  _id?: string | null;
+  userId: string;
+  threshold: number;
+  mode: PriceChangeStrategyMode;
+  targetType: TargetType;
+  targetMeta: NftTargetMeta | TokenTargetMeta;
+  targetState: TargetState;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface IntervalSubscriptionParams {
+  _id?: string | null;
+  userId: string;
+  intervalMs: number;
+  targetType: TargetType;
+  targetMeta: NftTargetMeta | TokenTargetMeta;
+  targetState: TargetState;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface CreateTargetParams {
+  type: TargetType;
+  meta: NftTargetMeta | TokenTargetMeta;
+  state: TargetState;
+}
+
 export class SubscriptionFactory {
   static createPriceChangeSubscription(
-    threshold: number,
-    mode: PriceChangeStrategyMode,
-    type: TargetType,
-    currentPrice: number,
-    lastNotifiedAt: Date = new Date(),
-    isActive: boolean = true,
+    params: PriceChangeSubscriptionParams,
   ): Subscription<PriceChangeStrategy> {
-    const target = SubscriptionFactory.createTarget(
-      type,
-      currentPrice,
-      lastNotifiedAt,
+    const target = SubscriptionFactory.createTarget({
+      type: params.targetType,
+      meta: params.targetMeta,
+      state: params.targetState,
+    });
+    const strategy = new PriceChangeStrategy({ 
+      mode: params.mode, 
+      threshold: params.threshold 
+    });
+    return new Subscription(
+      params.userId, 
+      target, 
+      strategy, 
+      params.isActive ?? true,
+      params._id ?? null,
+      params.updatedAt ?? new Date(),
+      params.createdAt ?? new Date()
     );
-    const strategy = new PriceChangeStrategy({ mode, threshold });
-    return new Subscription(target, strategy, isActive);
   }
 
   static createIntervalChangeSubscription(
-    intervalMs: number,
-    type: TargetType,
-    currentPrice: number,
-    lastNotifiedAt: Date = new Date(),
-    isActive: boolean = true,
+    params: IntervalSubscriptionParams,
   ) {
-    const target = SubscriptionFactory.createTarget(
-      type,
-      currentPrice,
-      lastNotifiedAt,
-    );
+    const target = SubscriptionFactory.createTarget({
+      type: params.targetType,
+      meta: params.targetMeta,
+      state: params.targetState,
+    });
 
-    const strategy = new TimeIntervalStrategy({ intervalMs });
-    return new Subscription(target, strategy, isActive);
+    const strategy = new TimeIntervalStrategy({ intervalMs: params.intervalMs });
+    return new Subscription(
+      params.userId, 
+      target, 
+      strategy, 
+      params.isActive ?? true,
+      params._id ?? null,
+      params.updatedAt ?? new Date(),
+      params.createdAt ?? new Date()
+    );
   }
 
-  private static createTarget(
-    type: TargetType,
-    currentPrice: number,
-    lastNotifiedAt: Date,
-  ): Target {
-    switch (type) {
+  private static createTarget(params: CreateTargetParams): Target {
+    switch (params.type) {
       case "nft":
-        return new NftTarget({
-          lastNotifiedAt,
-          lastNotifiedPrice: currentPrice,
-        });
+        return new NftTarget(params.meta as NftTargetMeta, params.state);
       case "token":
-        return new TokenTarget({
-          lastNotifiedAt,
-          lastNotifiedPrice: currentPrice,
-        });
+        return new TokenTarget(params.meta as TokenTargetMeta, params.state);
       default:
-        const exhaustiveCheck: never = type;
+        const exhaustiveCheck: never = params.type;
         throw new FactoryException(`unknown target type <${exhaustiveCheck}>`);
     }
   }

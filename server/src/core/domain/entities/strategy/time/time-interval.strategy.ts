@@ -1,5 +1,6 @@
 import { NumberValidator } from "#/core/domain/utils/validator";
 import { StrategyException } from "#/core/domain/exceptions";
+import { Target } from "#domain/entities/target";
 import { IStrategy } from "../base/strategy.interface";
 import { IntervalChangeStrategyConfig } from "./types";
 
@@ -7,7 +8,7 @@ interface ITimeIntervalStrategy extends IStrategy<Date> {
   readonly type: "interval-change";
   readonly config: IntervalChangeStrategyConfig;
 
-  shouldNotify(currentState: Date, newState: Date): boolean;
+  shouldNotify(target: Target, newState: Date): boolean;
 }
 
 export class TimeIntervalStrategy implements ITimeIntervalStrategy {
@@ -15,22 +16,27 @@ export class TimeIntervalStrategy implements ITimeIntervalStrategy {
   readonly config: IntervalChangeStrategyConfig;
 
   constructor(config: IntervalChangeStrategyConfig) {
-    const validatedInterval = NumberValidator.validateNumber(config.intervalMs);
-    
     // Minimum interval is 1 second (1000ms)
-    if (validatedInterval < 1000) {
-      throw new StrategyException("Minimum interval is 1000ms (1 second)");
-    }
-    
+    this.validateInterval(config.intervalMs);
     this.config = {
-      intervalMs: validatedInterval,
+      intervalMs: config.intervalMs,
     };
   }
 
-  shouldNotify(currentState: Date, newState: Date): boolean {
+  public shouldNotify(target: Target, newState: Date): boolean {
     return (
-      Math.abs(newState.getTime() - currentState.getTime()) >=
+      Math.abs(newState.getTime() - target.state.lastNotifiedAt.getTime()) >=
       this.config.intervalMs
     );
+  }
+
+  private validateInterval(intervalMs: number): void {
+    const isValidInterval = NumberValidator.isValidNumber(intervalMs);
+
+    if (!isValidInterval)
+      throw new StrategyException("Minimum interval is 1000ms (1 second)");
+
+    if (intervalMs < 1000)
+      throw new StrategyException("Minimum interval is 1000ms (1 second)");
   }
 }
