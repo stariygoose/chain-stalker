@@ -9,7 +9,10 @@
       "#domain/*": ["src/core/domain/*"],
       "#application/*": ["./src/core/application/*"],
       "#infrastructure/*": ["./src/infrastructure/*"],
-      "#presentation/*": ["./src/presentation/*"]
+      "#presentation/*": ["./src/presentation/*"],
+      "#di/*": ["./src/di/*"],
+      "#config/*": ["./src/config/*"],
+      "#utils/*": ["./src/utils/*"]
 		},
 		"baseUrl": ".",
 		"rootDir": "./src",

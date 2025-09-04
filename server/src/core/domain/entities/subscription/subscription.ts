@@ -1,6 +1,6 @@
 import { Strategy, StrategyMapper } from "#domain/entities/strategy";
 import { Target } from "#domain/entities/target";
-import { StrategyException, SubscriptionException } from "#domain/exceptions";
+import { SubscriptionException } from "#domain/exceptions";
 
 interface ISubscription<TStrategy extends Strategy> {
   readonly _id: string | null;

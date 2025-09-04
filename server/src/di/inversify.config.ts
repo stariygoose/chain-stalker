@@ -1,7 +1,7 @@
 import { Container } from "inversify";
 
 import { SubscriptionRepository } from "#infrastructure/database/mongodb/repositories/subscription.repository.js";
-import { TYPES } from "#di/types.js";
+import { TYPES } from "#di/types";
 import { SubscriptionController } from "#presentation/controllers/subscription.controller.js";
 import { ConfigService } from "#config/config.service.js";
 import {
@@ -38,10 +38,7 @@ import {
   Authenticator,
   IAuthenticator,
 } from "#presentation/middlewares/auth/authenticator.js";
-import {
-  EventBus,
-  IEventBus,
-} from "#application/ports/event-bus/event-bus.class.js";
+import { EventBus, IEventBus } from "#application/ports/event-bus";
 
 export let container = new Container();
 

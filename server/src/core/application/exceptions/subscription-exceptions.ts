@@ -10,7 +10,7 @@ export class SubscriptionAlreadyExistsException extends ApplicationException {
   constructor(
     message: string = "Subscription with this target already exists",
   ) {
-    super(message, "SUBSCRIPTION_ALREADY_EXISTS", 409);
+    super(message, "SUBSCRIPTION_ALREADY_EXISTS", 403);
   }
 }
 
